@@ -1,0 +1,3352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>ViralSignal AI — Meme Stock &amp; Viral Trend Predictor</title>
+  <meta name="description" content="AI-powered meme stock and viral trend predictor. Get instant viral scores, pump probabilities, and meme potential ratings. Not financial advice." />
+  <meta name="theme-color" content="#070710" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Open Graph / Social sharing -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:title"       content="ViralSignal AI — Meme Stock Predictor" />
+  <meta property="og:description" content="Predict the next viral trade. AI-powered viral scores and meme potential ratings." />
+  <meta property="og:image"       content="https://viralsignal.ai/og-image.png" />
+  <meta property="og:url"         content="https://viralsignal.ai" />
+  <meta name="twitter:card"       content="summary_large_image" />
+  <meta name="twitter:title"      content="ViralSignal AI" />
+  <meta name="twitter:description" content="AI-powered meme stock viral score predictor." />
+  <meta name="twitter:image"      content="https://viralsignal.ai/og-image.png" />
+
+  <!-- Inline SVG favicon — no extra request -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23070710'/><text y='24' x='4' font-size='22'>⚡</text></svg>" />
+
+  <!-- DNS prefetch for CDN domains -->
+  <link rel="dns-prefetch" href="//cdn.tailwindcss.com" />
+  <link rel="dns-prefetch" href="//cdn.jsdelivr.net" />
+  <link rel="dns-prefetch" href="//cdnjs.cloudflare.com" />
+  <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+
+  <!-- Tailwind must be sync (needs to run before DOM paints) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js and confetti deferred — not needed until first interaction -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js" defer></script>
+  <!-- Stripe.js — deferred; used by stripeCheckout() -->
+  <script src="https://js.stripe.com/v3/" defer></script>
+  <!-- html2canvas loaded lazily on first export — see lazyH2C() -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Space Grotesk','system-ui','sans-serif'],
+            mono: ['Space Mono','monospace'],
+          }
+        }
+      }
+    };
+  </script>
+
+<style>
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RESET & BASE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green:  #00ff88;
+  --cyan:   #00d4ff;
+  --purple: #7c3aed;
+  --pink:   #ff2d78;
+  --orange: #ff6b35;
+  --gold:   #ffd700;
+  --bg:     #070710;
+  --bg1:    #0d0d1a;
+  --bg2:    #12122a;
+  --bg3:    #1a1a3e;
+  --border: rgba(255,255,255,.07);
+  --border-bright: rgba(255,255,255,.12);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  background: var(--bg);
+  color: #fff;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y: none;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   BACKGROUND
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(0,255,136,.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,136,.022) 1px, transparent 1px);
+  background-size: 52px 52px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TYPOGRAPHY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.grad-text {
+  background: linear-gradient(135deg, var(--green) 0%, var(--cyan) 55%, var(--purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.grad-text-fire {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--orange) 40%, var(--pink) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   CARDS & GLASS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.card {
+  background: rgba(13,13,26,.88);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+.card-bright {
+  background: rgba(26,26,62,.72);
+  border: 1px solid var(--border-bright);
+  border-radius: 20px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* Card hover lift */
+.card-lift {
+  transition: transform .22s ease, box-shadow .22s ease;
+  will-change: transform;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+}
+
+/* Colored top-accent border */
+.accent-green  { border-top: 2px solid rgba(0,255,136,.5); }
+.accent-pink   { border-top: 2px solid rgba(255,45,120,.5); }
+.accent-cyan   { border-top: 2px solid rgba(0,212,255,.5); }
+.accent-gold   { border-top: 2px solid rgba(255,215,0,.5); }
+.accent-purple { border-top: 2px solid rgba(124,58,237,.5); }
+
+/* Dynamic glow based on score */
+.glow-score-high   { box-shadow: 0 0 0 1px rgba(0,255,136,.35), 0 4px 32px rgba(0,255,136,.14), 0 0 60px rgba(0,255,136,.06); }
+.glow-score-med    { box-shadow: 0 0 0 1px rgba(0,212,255,.35), 0 4px 32px rgba(0,212,255,.14); }
+.glow-score-warm   { box-shadow: 0 0 0 1px rgba(255,215,0,.3),  0 4px 32px rgba(255,215,0,.1); }
+.glow-score-low    { box-shadow: 0 0 0 1px rgba(124,58,237,.35), 0 4px 28px rgba(124,58,237,.12); }
+.glow-purple-card  { box-shadow: 0 0 0 1px rgba(124,58,237,.4),  0 4px 28px rgba(124,58,237,.15); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   HEADER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#site-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: transparent;
+  transition: background .3s ease, border-color .3s ease, box-shadow .3s ease;
+  /* safe area for notched phones */
+  padding-top: max(16px, env(safe-area-inset-top));
+}
+#site-header.scrolled {
+  background: rgba(7,7,16,.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  box-shadow: 0 4px 24px rgba(0,0,0,.4);
+}
+
+/* Logo icon */
+.logo-icon {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--green), var(--cyan));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; color: var(--bg);
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0,255,136,.35);
+}
+
+/* Live pulse dot */
+@keyframes livePulse {
+  0%,100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(.8); opacity: .5; }
+}
+.live-dot { animation: livePulse 2s ease-in-out infinite; }
+
+/* Pro badge */
+.pro-badge {
+  background: linear-gradient(135deg, var(--gold), var(--orange));
+  animation: proPulse 2.5s ease-in-out infinite;
+}
+@keyframes proPulse {
+  0%,100% { box-shadow: 0 0 8px rgba(255,215,0,.4); }
+  50%      { box-shadow: 0 0 20px rgba(255,215,0,.7), 0 0 32px rgba(255,107,53,.3); }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   INPUTS & BUTTONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.inp {
+  background: rgba(5,5,14,.9);
+  border: 1px solid rgba(255,255,255,.09);
+  color: #fff;
+  outline: none;
+  font-family: inherit;
+  transition: border-color .2s, box-shadow .2s;
+  -webkit-appearance: none;
+}
+.inp:focus {
+  border-color: rgba(0,255,136,.5);
+  box-shadow: 0 0 0 3px rgba(0,255,136,.08), inset 0 0 0 1px rgba(0,255,136,.15);
+}
+.inp::placeholder { color: rgba(255,255,255,.2); }
+
+/* Generate button */
+.btn-gen {
+  background: linear-gradient(135deg, var(--green) 0%, var(--cyan) 100%);
+  color: var(--bg);
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: .025em;
+  cursor: pointer;
+  border: none;
+  position: relative;
+  overflow: hidden;
+  transition: transform .2s ease, box-shadow .2s ease, opacity .2s;
+}
+.btn-gen::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.3), transparent);
+  transition: left .6s ease;
+  pointer-events: none;
+}
+.btn-gen:hover::before { left: 160%; }
+.btn-gen:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,255,136,.38); }
+.btn-gen:active { transform: translateY(0) scale(.98); }
+.btn-gen:disabled { opacity: .5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+/* Secondary buttons */
+.btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,.1);
+  color: rgba(255,255,255,.45);
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.btn-ghost:hover {
+  border-color: rgba(255,255,255,.22);
+  color: rgba(255,255,255,.65);
+  background: rgba(255,255,255,.04);
+}
+
+/* Ticker badge */
+.ticker-badge {
+  background: linear-gradient(135deg, rgba(0,255,136,.13), rgba(0,212,255,.07));
+  border: 1px solid rgba(0,255,136,.3);
+  color: var(--green);
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  font-size: .7rem;
+  letter-spacing: .04em;
+  padding: 4px 10px;
+  border-radius: 99px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   HERO STATUS PILL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.status-pill {
+  background: rgba(0,255,136,.07);
+  border: 1px solid rgba(0,255,136,.18);
+  color: rgba(255,255,255,.55);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  font-size: .72rem;
+  letter-spacing: .02em;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PROGRESS BARS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.prog-track {
+  height: 6px;
+  background: rgba(255,255,255,.05);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.prog-bar {
+  height: 100%;
+  border-radius: 99px;
+  width: 0%;
+  transition: width 1.4s cubic-bezier(.4,0,.2,1);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   GAUGE SVG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#gauge-fill {
+  transition: stroke-dashoffset 1.7s cubic-bezier(.4,0,.2,1), stroke .5s ease;
+  filter: url(#gauge-glow);
+}
+.score-num-el { transition: color .5s ease; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   LOADING PANEL (terminal style)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin-rev { to { transform: rotate(-360deg); } }
+@keyframes pulseRing {
+  0%   { transform: scale(.92); opacity: .6; }
+  50%  { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(.92); opacity: .6; }
+}
+@keyframes scanProgress {
+  0%   { width: 0%; }
+  80%  { width: 92%; }
+  100% { width: 92%; }
+}
+@keyframes termBlink {
+  0%,49% { opacity: 1; }
+  50%,100% { opacity: 0; }
+}
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.spinner-ring-outer {
+  animation: spin 2.4s linear infinite;
+  border: 2px dashed rgba(0,255,136,.2);
+  border-radius: 50%;
+}
+.spinner-ring-mid {
+  animation: spin-rev 1.8s linear infinite;
+  border: 2px solid transparent;
+  border-top-color: var(--green);
+  border-right-color: var(--cyan);
+  border-radius: 50%;
+}
+.spinner-ring-inner {
+  animation: spin 1.1s linear infinite;
+  border: 2px solid transparent;
+  border-top-color: var(--purple);
+  border-radius: 50%;
+}
+.spinner-core { animation: pulseRing 1.6s ease-in-out infinite; }
+
+.term-line {
+  animation: fadeSlideIn .25s ease both;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: .72rem;
+  line-height: 1.6;
+  font-family: 'Space Mono', monospace;
+  color: rgba(0,255,136,.7);
+}
+.term-cursor {
+  display: inline-block;
+  width: 6px; height: 11px;
+  background: var(--green);
+  border-radius: 1px;
+  margin-left: 2px;
+  animation: termBlink .9s step-end infinite;
+  vertical-align: middle;
+}
+.scan-progress-bar {
+  height: 3px;
+  background: linear-gradient(90deg, var(--green), var(--cyan), var(--purple));
+  border-radius: 99px;
+  animation: scanProgress 2.8s ease-in-out forwards;
+  box-shadow: 0 0 8px rgba(0,255,136,.5);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MODAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#modal-overlay {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(.94) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-panel { animation: modalIn .28s cubic-bezier(.34,1.56,.64,1) both; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TOAST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@keyframes toastIn {
+  from { opacity:0; transform: translateX(60px) scale(.95); }
+  to   { opacity:1; transform: translateX(0) scale(1); }
+}
+@keyframes toastOut {
+  from { opacity:1; transform: translateX(0) scale(1); }
+  to   { opacity:0; transform: translateX(60px) scale(.95); }
+}
+.toast-show { animation: toastIn .3s cubic-bezier(.34,1.56,.64,1) both; }
+.toast-hide { animation: toastOut .25s ease both; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SCROLL REVEAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.reveal.show { opacity: 1; transform: translateY(0); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   CHART RANGE BUTTON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.rng-btn {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: .68rem;
+  font-family: 'Space Mono', monospace;
+  border: 1px solid rgba(255,255,255,.1);
+  color: rgba(255,255,255,.35);
+  cursor: pointer;
+  background: transparent;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.rng-btn:hover { color: rgba(255,255,255,.6); }
+.rng-btn.active {
+  border-color: rgba(0,255,136,.5);
+  color: var(--green);
+  background: rgba(0,255,136,.06);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MEME CARD (html2canvas target)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#meme-card {
+  background: linear-gradient(135deg, #070710 0%, #12122e 40%, #1e1e42 70%, #070710 100%);
+  border: 1px solid rgba(0,255,136,.35);
+  border-radius: 18px;
+  position: relative;
+  overflow: hidden;
+}
+#meme-card-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,255,136,.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,136,.14) 1px, transparent 1px);
+  background-size: 20px 20px;
+  pointer-events: none;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SOCIAL HOOK CARDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.tiktok-card {
+  background: linear-gradient(135deg, rgba(0,0,0,.5), rgba(20,0,30,.5));
+  border: 1px solid rgba(255,255,255,.07);
+  border-left: 2px solid #ff2d78;
+}
+.twitter-card {
+  background: linear-gradient(135deg, rgba(0,0,0,.5), rgba(0,10,24,.5));
+  border: 1px solid rgba(255,255,255,.07);
+  border-left: 2px solid #fff;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MOBILE STICKY CTA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#mobile-sticky {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 35;
+  background: rgba(7,7,16,.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255,255,255,.07);
+  padding: 12px 16px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform .35s cubic-bezier(.4,0,.2,1);
+}
+#mobile-sticky.visible { transform: translateY(0); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SCROLLBAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 99px; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RESPONSIVE TWEAKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@media (max-width: 390px) {
+  /* iPhone SE / very small — shrink gauge */
+  #gauge-wrap { width: 116px !important; height: 116px !important; }
+  #score-num-el { font-size: 3.2rem !important; }
+  .stat-label { font-size: .58rem !important; }
+}
+@media (max-width: 430px) {
+  /* Standard iPhone — keep comfortable touch targets */
+  .card { border-radius: 18px; }
+  .mobile-sticky-space { height: 72px; }
+}
+@media (min-width: 640px) {
+  #mobile-sticky { display: none !important; }
+}
+
+/* How-it-works horizontal scroll on mobile */
+.how-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.how-scroll::-webkit-scrollbar { display: none; }
+.how-card {
+  flex-shrink: 0;
+  width: 220px;
+  scroll-snap-align: start;
+}
+@media (min-width: 540px) {
+  .how-scroll { display: grid; grid-template-columns: repeat(3,1fr); overflow-x: visible; }
+  .how-card { width: auto; }
+}
+
+/* Separator dot */
+.sep { color: rgba(255,255,255,.2); }
+
+/* Disclaimer */
+.disclaimer-box {
+  background: rgba(251,191,36,.05);
+  border: 1px solid rgba(251,191,36,.18);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   EXPORT BUTTON (prominent)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.btn-export {
+  background: linear-gradient(135deg, #ff6b35 0%, #ff2d78 55%, #7c3aed 100%);
+  color: #fff;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: .03em;
+  cursor: pointer;
+  border: none;
+  position: relative;
+  overflow: hidden;
+  transition: transform .2s ease, box-shadow .2s ease, opacity .2s;
+  box-shadow: 0 4px 24px rgba(255,45,120,.35), 0 0 0 1px rgba(255,107,53,.3);
+}
+.btn-export::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent);
+  transition: left .6s ease;
+  pointer-events: none;
+}
+.btn-export:hover::before { left: 160%; }
+.btn-export:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 36px rgba(255,45,120,.45), 0 0 0 1px rgba(255,107,53,.4);
+}
+.btn-export:active { transform: translateY(0) scale(.98); }
+.btn-export:disabled { opacity: .55; cursor: not-allowed; transform: none !important; }
+
+/* Floating export bar pinned inside results */
+#export-bar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 30;
+  margin: 0 0 12px;
+  pointer-events: none;
+}
+#export-bar-inner {
+  pointer-events: all;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(10,10,24,.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,107,53,.28);
+  border-radius: 20px;
+  padding: 10px 10px 10px 18px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.6), 0 0 0 1px rgba(255,45,120,.15);
+}
+@keyframes exportPulse {
+  0%,100% { box-shadow: 0 4px 24px rgba(255,45,120,.35), 0 0 0 1px rgba(255,107,53,.3); }
+  50%      { box-shadow: 0 4px 36px rgba(255,45,120,.55), 0 0 0 1px rgba(255,107,53,.5), 0 0 60px rgba(255,45,120,.15); }
+}
+.btn-export-pulse { animation: exportPulse 2.8s ease-in-out infinite; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   REDESIGNED MEME CARD (PNG target)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#meme-card {
+  background: linear-gradient(150deg,
+    #07071a 0%,
+    #0f0f2e 25%,
+    #13132a 50%,
+    #0a0a20 75%,
+    #07071a 100%
+  ) !important;
+  border: 1px solid rgba(0,255,136,.32) !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+/* Corner accent marks */
+#meme-card::before,
+#meme-card::after {
+  content: '';
+  position: absolute;
+  width: 32px; height: 32px;
+  border-style: solid;
+  border-color: rgba(0,255,136,.4);
+  pointer-events: none;
+}
+#meme-card::before {
+  top: 14px; left: 14px;
+  border-width: 2px 0 0 2px;
+  border-radius: 2px 0 0 0;
+}
+#meme-card::after {
+  bottom: 14px; right: 14px;
+  border-width: 0 2px 2px 0;
+  border-radius: 0 0 2px 0;
+}
+
+/* Score ring on the card */
+#card-gauge-fill {
+  transition: stroke-dashoffset 1.5s cubic-bezier(.4,0,.2,1), stroke .5s ease;
+}
+
+/* Export "just exported" flash */
+@keyframes flashGreen {
+  0%   { box-shadow: 0 0 0 0 rgba(0,255,136,.7); }
+  50%  { box-shadow: 0 0 0 12px rgba(0,255,136,.2); }
+  100% { box-shadow: 0 0 0 0 rgba(0,255,136,0); }
+}
+.export-flash { animation: flashGreen .6s ease-out; }
+
+/* ── PERFORMANCE ──────────────────────────────── */
+/* Defer rendering of below-fold sections */
+#history-section, .reveal {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 200px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PRO MODAL (tabbed Gumroad style)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.modal-header-strip {
+  background: linear-gradient(135deg, #1a0a2e 0%, #2d0a3e 50%, #1a0a2e 100%);
+  border-bottom: 1px solid rgba(124,58,237,.3);
+  padding: 28px 24px 22px;
+  text-align: center;
+  border-radius: 20px 20px 0 0;
+  position: relative;
+  overflow: hidden;
+}
+.modal-header-strip::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(124,58,237,.35), transparent 70%);
+}
+.modal-tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,.08); }
+.modal-tab {
+  flex: 1; padding: 11px 0; font-size: .78rem; font-weight: 600;
+  color: rgba(255,255,255,.38); cursor: pointer; border: none;
+  background: transparent; font-family: inherit;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color .2s, border-color .2s;
+}
+.modal-tab:hover { color: rgba(255,255,255,.65); }
+.modal-tab.active { color: #fff; border-bottom-color: var(--purple); }
+.modal-pane { display: none; padding: 20px 24px 24px; }
+.modal-pane.active { display: block; }
+.feature-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.05);
+  font-size: .82rem;
+}
+.feature-row:last-child { border-bottom: none; }
+.feature-check { color: var(--green); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+.btn-gumroad {
+  background: linear-gradient(135deg, #ff90e8, #ff3bac 40%, #c026d3 100%);
+  color: #fff; font-weight: 800; letter-spacing: .03em;
+  border: none; cursor: pointer; font-family: inherit;
+  border-radius: 14px; padding: 14px 20px; width: 100%;
+  font-size: .95rem; transition: transform .2s, box-shadow .2s;
+  box-shadow: 0 6px 24px rgba(192,38,211,.4);
+}
+.btn-gumroad:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(192,38,211,.55); }
+
+/* ── LIVE PRICE CARD ────────────────────────────────────────────────────── */
+.live-badge {
+  display:inline-flex; align-items:center; gap:4px;
+  font-family:'Space Mono',monospace; font-size:.52rem; font-weight:700;
+  color:#00ff88; letter-spacing:.08em;
+  background:rgba(0,255,136,.1); border:1px solid rgba(0,255,136,.25);
+  border-radius:99px; padding:2px 8px; vertical-align:middle; margin-left:8px;
+}
+.live-badge::before { content:'●'; font-size:.45rem; animation:pulse-dot 1.8s ease infinite; }
+@keyframes pulse-dot { 0%,100%{ opacity:1; } 50%{ opacity:.25; } }
+.sim-badge {
+  display:inline-flex; align-items:center;
+  font-family:'Space Mono',monospace; font-size:.52rem; font-weight:700;
+  color:rgba(255,255,255,.28); letter-spacing:.07em;
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
+  border-radius:99px; padding:2px 8px; vertical-align:middle; margin-left:8px;
+}
+.change-up   { color:#00ff88; }
+.change-down { color:#ff2d78; }
+
+/* ── STRIPE PAYMENT BUTTON & SUCCESS PANE ───────────────────────────────── */
+.btn-stripe {
+  background: linear-gradient(135deg,#635bff 0%,#7c3aed 100%);
+  color:#fff; font-weight:800; letter-spacing:.02em;
+  border:none; cursor:pointer; font-family:inherit;
+  border-radius:14px; padding:15px 20px; width:100%;
+  font-size:1rem; transition:transform .2s, box-shadow .2s;
+  box-shadow:0 6px 28px rgba(99,91,255,.45);
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.btn-stripe:hover { transform:translateY(-2px); box-shadow:0 12px 36px rgba(99,91,255,.6); }
+.btn-stripe:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+.price-badge {
+  display:inline-flex; align-items:center; justify-content:center;
+  background:rgba(99,91,255,.12); border:1px solid rgba(99,91,255,.32);
+  border-radius:99px; padding:5px 14px;
+  font-family:"Space Mono",monospace; font-size:.75rem; font-weight:700;
+  color:#a78bfa; letter-spacing:.04em; margin-bottom:14px;
+}
+.key-display-box {
+  background:rgba(0,255,136,.06); border:1px solid rgba(0,255,136,.25);
+  border-radius:12px; padding:13px 44px 13px 14px;
+  font-family:"Space Mono",monospace; font-size:.88rem; font-weight:700;
+  color:#00ff88; letter-spacing:.08em; word-break:break-all;
+  text-align:center; margin:10px 0; position:relative;
+}
+.copy-key-btn {
+  position:absolute; top:50%; right:10px; transform:translateY(-50%);
+  background:rgba(0,255,136,.15); border:1px solid rgba(0,255,136,.3);
+  color:#00ff88; border-radius:7px; padding:4px 9px;
+  font-size:.62rem; font-family:"Space Mono",monospace; cursor:pointer;
+  transition:background .15s;
+}
+.copy-key-btn:hover { background:rgba(0,255,136,.28); }
+.success-icon-wrap {
+  width:56px; height:56px; border-radius:50%;
+  background:linear-gradient(135deg,rgba(0,255,136,.18),rgba(0,212,255,.08));
+  border:2px solid rgba(0,255,136,.35);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.55rem; margin:0 auto 12px;
+}
+
+/* Key input verify states */
+.key-input-wrap { position: relative; }
+.key-verify-state {
+  font-size: .68rem; font-family: 'Space Mono', monospace;
+  margin-top: 7px; display: flex; align-items: center; gap: 6px;
+  min-height: 18px;
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60%  { transform: translateX(-6px); }
+  40%,80%  { transform: translateX(6px); }
+}
+.shake { animation: shake .38s ease; }
+@keyframes keySuccess {
+  0%   { box-shadow: 0 0 0 0 rgba(0,255,136,.6); }
+  70%  { box-shadow: 0 0 0 10px rgba(0,255,136,0); }
+  100% { box-shadow: 0 0 0 0 rgba(0,255,136,0); }
+}
+.key-success-flash { animation: keySuccess .7s ease; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PRO FEATURE LOCK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.pro-lock {
+  position: relative; overflow: hidden;
+}
+.pro-lock-overlay {
+  position: absolute; inset: 0; z-index: 10;
+  background: rgba(7,7,16,.82);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px;
+  border-radius: inherit; cursor: pointer;
+  transition: opacity .2s;
+}
+.pro-lock-overlay:hover { background: rgba(7,7,16,.75); }
+.pro-lock-badge {
+  background: linear-gradient(135deg, #7c3aed, #c026d3);
+  color: #fff; font-size: .7rem; font-weight: 700;
+  padding: 5px 14px; border-radius: 99px; letter-spacing: .04em;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   CHART TYPE TABS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.ctype-btn {
+  padding: 5px 12px; border-radius: 8px; font-size: .68rem;
+  font-family: 'Space Mono', monospace; letter-spacing: .04em;
+  border: 1px solid rgba(255,255,255,.1); color: rgba(255,255,255,.35);
+  cursor: pointer; background: transparent; transition: all .2s;
+  display: flex; align-items: center; gap: 5px;
+}
+.ctype-btn:hover { color: rgba(255,255,255,.6); }
+.ctype-btn.active { border-color: rgba(0,255,136,.5); color: var(--green); background: rgba(0,255,136,.06); }
+.ctype-btn .pro-pip {
+  font-size: .55rem; background: linear-gradient(135deg,#7c3aed,#c026d3);
+  color: #fff; padding: 1px 5px; border-radius: 99px; font-weight: 700;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SIGNAL HISTORY PANEL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.history-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.05);
+  cursor: pointer; transition: background .15s;
+  border-radius: 8px; padding: 10px 8px; margin: 0 -8px;
+}
+.history-row:last-child { border-bottom: none; }
+.history-row:hover { background: rgba(255,255,255,.03); }
+.history-score-pill {
+  min-width: 38px; height: 28px; border-radius: 8px; font-size: .78rem;
+  font-family: 'Space Mono', monospace; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ADVANCED PRO STATS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.adv-stat-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.05);
+  font-size: .82rem;
+}
+.adv-stat-item:last-child { border-bottom: none; }
+.adv-stat-bar-wrap { flex: 1; margin: 0 12px; height: 4px; background: rgba(255,255,255,.06); border-radius: 99px; overflow: hidden; }
+.adv-stat-bar { height: 100%; border-radius: 99px; transition: width 1.2s cubic-bezier(.4,0,.2,1); }
+</style>
+</head>
+
+<body class="bg-grid">
+
+<!-- ─────────────────────────────────────────────
+  AMBIENT BLOBS
+───────────────────────────────────────────── -->
+<div class="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+  <div style="position:absolute;top:-80px;left:20%;width:420px;height:420px;
+    background:radial-gradient(circle,rgba(124,58,237,.18),transparent 68%);
+    filter:blur(70px);border-radius:50%;"></div>
+  <div style="position:absolute;top:40%;right:-60px;width:340px;height:340px;
+    background:radial-gradient(circle,rgba(0,255,136,.12),transparent 68%);
+    filter:blur(80px);border-radius:50%;"></div>
+  <div style="position:absolute;bottom:-40px;left:-40px;width:300px;height:300px;
+    background:radial-gradient(circle,rgba(255,45,120,.1),transparent 68%);
+    filter:blur(80px);border-radius:50%;"></div>
+</div>
+
+<!-- ─────────────────────────────────────────────
+  TOAST
+───────────────────────────────────────────── -->
+<div id="toast-wrap" style="position:fixed;top:16px;right:16px;z-index:999;pointer-events:none;display:none;">
+  <div id="toast" class="card" style="display:flex;align-items:center;gap:10px;padding:12px 16px;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,.5);">
+    <span id="toast-icon" style="font-size:1rem;flex-shrink:0;"></span>
+    <span id="toast-msg" style="font-size:.82rem;color:rgba(255,255,255,.82);font-weight:500;"></span>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────
+  UPGRADE MODAL
+───────────────────────────────────────────── -->
+<div id="modal-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;display:none;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)closeModal()">
+  <div style="max-width:400px;width:100%;background:#0f0a1f;border:1px solid rgba(124,58,237,.35);border-radius:20px;overflow:hidden;box-shadow:0 0 0 1px rgba(124,58,237,.15),0 32px 80px rgba(0,0,0,.7);position:relative;">
+
+    <!-- Close -->
+    <button onclick="closeModal()" aria-label="Close"
+      style="position:absolute;top:12px;right:12px;z-index:2;width:28px;height:28px;border-radius:99px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.4);font-size:1rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
+
+    <!-- Header strip -->
+    <div class="modal-header-strip">
+      <div style="position:relative;z-index:1;">
+        <div style="font-size:2.4rem;line-height:1;margin-bottom:10px;">⚡</div>
+        <div class="grad-text" style="font-size:1.15rem;font-weight:800;letter-spacing:-.01em;">ViralSignal <span style="color:#c026d3;">Pro</span></div>
+        <div style="font-size:.75rem;color:rgba(255,255,255,.42);margin-top:4px;">Unlimited signals · Pro-only charts · Signal history</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="mtab-upgrade" onclick="switchModalTab('upgrade')">🚀 Upgrade</button>
+      <button class="modal-tab" id="mtab-activate" onclick="switchModalTab('activate')">🔑 Activate Key</button>
+    </div>
+
+    <!-- UPGRADE pane -->
+    <div class="modal-pane active" id="mpane-upgrade">
+      <div style="text-align:center;">
+        <div class="price-badge">⚡ $19.99 · One-time · Lifetime Access</div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div class="feature-row"><span class="feature-check">✓</span><span><strong>Unlimited signals</strong> — no search limit</span></div>
+        <div class="feature-row"><span class="feature-check">✓</span><span><strong>Candlestick + RSI charts</strong> — pro chart types</span></div>
+        <div class="feature-row"><span class="feature-check">✓</span><span><strong>Signal history</strong> — last 10 runs saved</span></div>
+        <div class="feature-row"><span class="feature-check">✓</span><span><strong>Advanced stats</strong> — Short Interest, IV &amp; Sentiment</span></div>
+        <div class="feature-row"><span class="feature-check">✓</span><span><strong>Watermark-free</strong> PNG exports</span></div>
+      </div>
+      <button id="btn-stripe-pay" onclick="stripeCheckout()" class="btn-stripe" style="margin-bottom:10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;"><path d="M2 7h20v12a2 2 0 01-2 2H4a2 2 0 01-2-2V7z" fill="rgba(255,255,255,.18)"/><rect x="2" y="5" width="20" height="4" rx="1" fill="rgba(255,255,255,.4)"/><rect x="5" y="13" width="5" height="2" rx="1" fill="white"/></svg>
+        Pay $19.99 — Lifetime Access
+      </button>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.07);"></div>
+        <span style="font-family:'Space Mono',monospace;font-size:.58rem;color:rgba(255,255,255,.2);">OR</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.07);"></div>
+      </div>
+      <button onclick="switchModalTab('activate')" class="btn-ghost" style="width:100%;padding:11px;border-radius:12px;font-size:.8rem;">🔑 Already have a key? Activate it</button>
+      <div style="text-align:center;margin-top:12px;">
+        <span style="font-family:'Space Mono',monospace;font-size:.55rem;color:rgba(255,255,255,.18);">🔒 Secured by Stripe · No subscription · Cancel anytime</span>
+      </div>
+    </div>
+
+    <!-- ACTIVATE pane -->
+    <div class="modal-pane" id="mpane-activate">
+      <div style="margin-bottom:6px;">
+        <label style="display:block;font-family:'Space Mono',monospace;font-size:.62rem;color:rgba(255,255,255,.35);letter-spacing:.1em;margin-bottom:8px;">LICENSE KEY</label>
+        <div class="key-input-wrap">
+          <input id="modal-key-inp" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            class="inp" style="width:100%;box-sizing:border-box;border-radius:12px;padding:11px 14px;font-size:.78rem;font-family:'Space Mono',monospace;letter-spacing:.04em;" />
+        </div>
+        <div class="key-verify-state" id="key-verify-state" style="color:rgba(255,255,255,.3);">
+          <span id="key-verify-msg">Enter your VS- license key from your email receipt</span>
+        </div>
+      </div>
+      <button onclick="verifyLicense()" id="btn-verify-key" class="btn-gen" style="width:100%;padding:12px;border-radius:12px;font-size:.88rem;margin-bottom:10px;">
+        <span id="btn-verify-label">Activate License</span>
+      </button>
+      <button onclick="switchModalTab('upgrade')" class="btn-ghost" style="width:100%;padding:10px;border-radius:12px;font-size:.78rem;">← Back to Upgrade</button>
+      <div style="text-align:center;margin-top:14px;font-size:.68rem;color:rgba(255,255,255,.2);font-family:'Space Mono',monospace;">
+        Don't have a key? <a href="#" onclick="switchModalTab('upgrade');return false;" style="color:rgba(99,91,255,.7);">Buy Pro ($19.99) →</a>
+      </div>
+    </div>
+
+    <!-- SUCCESS pane — shown automatically after Stripe payment -->
+    <div class="modal-pane" id="mpane-success" style="display:none;text-align:center;">
+      <div class="success-icon-wrap">✅</div>
+      <div style="font-size:1.1rem;font-weight:800;letter-spacing:-.01em;margin-bottom:6px;">Payment Successful!</div>
+      <div style="font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:4px;">Your lifetime license key:</div>
+      <div class="key-display-box" id="success-key-display">
+        VS-XXXX-XXXX-XXXX
+        <button class="copy-key-btn" onclick="copySuccessKey()" id="copy-key-btn">COPY</button>
+      </div>
+      <div style="font-size:.72rem;color:rgba(0,255,136,.6);margin-bottom:14px;">✓ Key saved automatically — you're all set!</div>
+      <p style="font-size:.7rem;color:rgba(255,255,255,.28);line-height:1.5;margin-bottom:16px;">
+        Save this key somewhere safe — use it to activate Pro on any device via the "Activate Key" tab.
+      </p>
+      <button onclick="closeModal()" class="btn-gen" style="width:100%;padding:12px;border-radius:12px;font-size:.88rem;">
+        Start Using Pro ⚡
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────
+  MOBILE STICKY CTA
+───────────────────────────────────────────── -->
+<div id="mobile-sticky">
+  <button onclick="mobileStickyAction()" class="btn-gen" id="mobile-sticky-btn"
+    style="width:100%;padding:14px;border-radius:14px;font-size:.95rem;display:flex;align-items:center;justify-content:center;gap:8px;">
+    <span id="mobile-sticky-icon">⚡</span>
+    <span id="mobile-sticky-label">Generate Signal</span>
+  </button>
+</div>
+
+<!-- ─────────────────────────────────────────────
+  PAGE
+───────────────────────────────────────────── -->
+<div class="relative" style="z-index:10;max-width:600px;margin:0 auto;padding:0 16px;">
+
+  <!-- ══════════════ HEADER ══════════════ -->
+  <header id="site-header" style="padding-bottom:14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <!-- Logo -->
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="position:relative;">
+          <div class="logo-icon">⚡</div>
+          <span class="live-dot" style="position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:50%;background:#4ade80;border:2px solid var(--bg);display:block;"></span>
+        </div>
+        <div>
+          <div style="font-family:'Space Mono',monospace;font-size:1.05rem;font-weight:700;line-height:1.1;">
+            <span class="grad-text">ViralSignal</span><span style="color:#fff;">AI</span>
+          </div>
+          <div style="font-size:.68rem;color:rgba(255,255,255,.32);margin-top:1px;">Meme Stock Predictor</div>
+        </div>
+      </div>
+
+      <!-- Right side -->
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div id="usage-pill" style="font-family:'Space Mono',monospace;font-size:.68rem;color:rgba(255,255,255,.32);display:none;">
+          <span id="uses-left">3</span> left
+        </div>
+        <button id="free-btn" onclick="showModal()" class="btn-ghost"
+          style="padding:6px 12px;border-radius:99px;font-size:.68rem;font-weight:700;letter-spacing:.06em;">
+          FREE
+        </button>
+        <div id="pro-btn" class="pro-badge" style="display:none;padding:6px 12px;border-radius:99px;font-size:.68rem;font-weight:800;color:#000;letter-spacing:.04em;">
+          ⭐ PRO
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════ HERO ══════════════ -->
+  <section class="reveal" style="text-align:center;padding:12px 0 28px;">
+    <div class="status-pill" style="margin-bottom:18px;">
+      <span class="live-dot" style="width:7px;height:7px;border-radius:50%;background:#4ade80;display:inline-block;flex-shrink:0;"></span>
+      AI Signal Engine · Live
+    </div>
+    <h2 style="font-size:clamp(1.9rem,7vw,2.6rem);font-weight:900;line-height:1.1;margin-bottom:12px;letter-spacing:-.02em;">
+      Predict the Next<br/>
+      <span class="grad-text">Viral Trade</span>
+    </h2>
+    <p style="font-size:.875rem;color:rgba(255,255,255,.42);max-width:280px;margin:0 auto;line-height:1.6;">
+      Drop any ticker or trend. Get an instant viral score, pump probability, and meme potential rating.
+    </p>
+  </section>
+
+  <!-- ══════════════ INPUT CARD ══════════════ -->
+  <div id="input-card" class="card reveal" style="padding:22px;margin-bottom:16px;border-color:rgba(0,255,136,.1);">
+
+    <!-- Tickers / Trends -->
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-family:'Space Mono',monospace;font-size:.65rem;color:rgba(255,255,255,.38);letter-spacing:.1em;margin-bottom:8px;">TICKERS / TRENDS</label>
+      <textarea id="ticker-inp" rows="3"
+        placeholder="MSTY NVDA PLTR&#10;hot TikTok AI trend&#10;GME AMC DOGE"
+        class="inp" style="width:100%;border-radius:14px;padding:12px 16px;font-size:.875rem;resize:none;line-height:1.55;"></textarea>
+    </div>
+
+    <!-- Portfolio note -->
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-family:'Space Mono',monospace;font-size:.65rem;color:rgba(255,255,255,.38);letter-spacing:.1em;margin-bottom:8px;">
+        PORTFOLIO NOTE <span style="color:rgba(255,255,255,.18);">optional</span>
+      </label>
+      <input id="port-note" type="text" placeholder="e.g. buying calls, watching only, YOLO play…"
+        class="inp" style="width:100%;border-radius:14px;padding:12px 16px;font-size:.875rem;" />
+    </div>
+
+    <!-- Pro key (collapsible feel) -->
+    <div style="margin-bottom:18px;padding:14px;border-radius:14px;border:1px dashed rgba(255,255,255,.09);background:rgba(255,255,255,.02);">
+      <label style="display:block;font-family:'Space Mono',monospace;font-size:.62rem;color:rgba(255,255,255,.28);letter-spacing:.1em;margin-bottom:8px;">
+        PRO KEY <span style="color:rgba(255,255,255,.14);">· optional</span>
+      </label>
+      <div style="display:flex;gap:8px;">
+        <input id="key-inp" type="text" placeholder="VS-XXXX-XXXX-XXXX"
+          class="inp" style="flex:1;border-radius:10px;padding:9px 12px;font-size:.75rem;font-family:'Space Mono',monospace;" />
+        <button onclick="applyKey('key-inp')" class="btn-ghost" style="border-radius:10px;padding:9px 14px;font-size:.75rem;white-space:nowrap;">Apply</button>
+      </div>
+    </div>
+
+    <!-- Generate -->
+    <button id="gen-btn" onclick="runGenerate()"
+      class="btn-gen" style="width:100%;padding:16px;border-radius:16px;font-size:1rem;display:flex;align-items:center;justify-content:center;gap:8px;">
+      <span id="btn-icon" style="font-size:1.1rem;">⚡</span>
+      <span id="btn-label">Generate Signal</span>
+    </button>
+    <p id="usage-line" style="text-align:center;font-size:.72rem;color:rgba(255,255,255,.24);margin-top:10px;">
+      5 Free Signals
+    </p>
+  </div>
+
+  <!-- ══════════════ LOADING PANEL ══════════════ -->
+  <div id="loading-panel" style="display:none;margin-bottom:16px;">
+    <div class="card" style="padding:32px 24px 28px;">
+
+      <!-- Multi-ring spinner -->
+      <div style="position:relative;width:88px;height:88px;margin:0 auto 22px;">
+        <!-- Outer dashed ring -->
+        <div class="spinner-ring-outer" style="position:absolute;inset:0;border-radius:50%;"></div>
+        <!-- Mid ring -->
+        <div class="spinner-ring-mid" style="position:absolute;inset:8px;border-radius:50%;"></div>
+        <!-- Inner ring -->
+        <div class="spinner-ring-inner" style="position:absolute;inset:18px;border-radius:50%;"></div>
+        <!-- Core logo -->
+        <div class="spinner-core" style="position:absolute;inset:28px;border-radius:50%;
+          background:linear-gradient(135deg,rgba(0,255,136,.2),rgba(0,212,255,.1));
+          border:1px solid rgba(0,255,136,.3);
+          display:flex;align-items:center;justify-content:center;font-size:.9rem;">⚡</div>
+      </div>
+
+      <!-- Progress bar -->
+      <div style="height:3px;background:rgba(255,255,255,.05);border-radius:99px;overflow:hidden;margin-bottom:18px;">
+        <div id="load-prog" class="scan-progress-bar"></div>
+      </div>
+
+      <!-- Terminal output -->
+      <div id="term-output" style="background:rgba(0,255,136,.03);border:1px solid rgba(0,255,136,.1);border-radius:12px;padding:14px 16px;min-height:80px;font-family:'Space Mono',monospace;">
+        <div style="font-size:.62rem;color:rgba(0,255,136,.45);letter-spacing:.08em;margin-bottom:8px;">▸ VIRALSIGNAL AI ENGINE v2.4</div>
+        <div id="term-lines" style="display:flex;flex-direction:column;gap:2px;"></div>
+        <div style="display:flex;align-items:center;gap:4px;margin-top:4px;">
+          <span style="font-size:.72rem;color:rgba(0,255,136,.5);">$</span>
+          <span class="term-cursor"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ RESULTS ══════════════ -->
+  <div id="results" style="display:none;margin-bottom:24px;">
+
+    <!-- Results sub-header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+      <div id="ticker-badges" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      <span id="sig-time" style="font-family:'Space Mono',monospace;font-size:.65rem;color:rgba(255,255,255,.28);"></span>
+    </div>
+
+    <!-- ── FLOATING EXPORT BAR ── -->
+    <div id="export-bar">
+      <div id="export-bar-inner">
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:.72rem;font-weight:700;color:rgba(255,255,255,.8);margin-bottom:1px;">Share your signal</p>
+          <p style="font-size:.65rem;color:rgba(255,255,255,.35);">Download as a PNG meme card</p>
+        </div>
+        <button id="export-main-btn" onclick="exportCard()" class="btn-export btn-export-pulse"
+          style="border-radius:14px;padding:12px 20px;font-size:.875rem;display:flex;align-items:center;gap:7px;white-space:nowrap;flex-shrink:0;">
+          <span style="font-size:1.05rem;">📸</span>
+          <span>Export PNG</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── LIVE PRICE CARD (hidden until real data loads) ── -->
+    <div id="live-price-card" class="card" style="display:none;padding:16px 20px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <span style="font-family:'Space Mono',monospace;font-size:.58rem;color:rgba(255,255,255,.35);letter-spacing:.1em;">MARKET PRICE</span>
+          <span id="live-badge-el" class="live-badge">LIVE</span>
+          <div style="display:flex;align-items:baseline;gap:10px;margin-top:6px;flex-wrap:wrap;">
+            <span id="live-price-el" style="font-family:'Space Mono',monospace;font-size:2.2rem;font-weight:700;line-height:1;color:#fff;">--</span>
+            <span id="live-change-el" style="font-family:'Space Mono',monospace;font-size:.9rem;font-weight:700;">--</span>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-family:'Space Mono',monospace;font-size:.52rem;color:rgba(255,255,255,.28);letter-spacing:.08em;margin-bottom:4px;">24H VOLUME</div>
+          <div id="live-vol-el" style="font-family:'Space Mono',monospace;font-size:.78rem;color:rgba(255,255,255,.55);">--</div>
+          <div id="live-currency-el" style="font-family:'Space Mono',monospace;font-size:.52rem;color:rgba(255,255,255,.22);margin-top:2px;letter-spacing:.06em;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIRAL SCORE CARD ── -->
+    <div id="score-card" class="card card-lift" style="padding:22px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:16px;">
+
+        <!-- Left: text -->
+        <div style="flex:1;min-width:0;">
+          <p style="font-family:'Space Mono',monospace;font-size:.62rem;color:rgba(255,255,255,.38);letter-spacing:.1em;margin-bottom:6px;">VIRAL SCORE</p>
+          <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px;">
+            <span id="score-num-el" class="score-num-el" style="font-family:'Space Mono',monospace;font-size:4rem;font-weight:700;line-height:1;letter-spacing:-.02em;">0</span>
+            <span style="font-family:'Space Mono',monospace;font-size:1.4rem;color:rgba(255,255,255,.2);font-weight:400;">/100</span>
+          </div>
+          <p id="score-label-el" style="font-size:.875rem;font-weight:700;margin-bottom:14px;"></p>
+          <!-- Score bar -->
+          <div class="prog-track">
+            <div id="score-bar" class="prog-bar" style="background:linear-gradient(90deg,#7c3aed,#00d4ff,#00ff88);"></div>
+          </div>
+        </div>
+
+        <!-- Right: SVG Gauge -->
+        <div id="gauge-wrap" style="width:128px;height:128px;position:relative;flex-shrink:0;">
+          <svg viewBox="0 0 120 120" style="width:100%;height:100%;transform:rotate(-90deg);">
+            <defs>
+              <filter id="gauge-glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <linearGradient id="gauge-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#7c3aed"/>
+                <stop offset="45%" stop-color="#00d4ff"/>
+                <stop offset="100%" stop-color="#00ff88"/>
+              </linearGradient>
+            </defs>
+            <!-- Track -->
+            <circle cx="60" cy="60" r="48" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="9"/>
+            <!-- Segment markers -->
+            <circle cx="60" cy="60" r="48" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="1"
+              stroke-dasharray="3 27.4" stroke-dashoffset="0"/>
+            <!-- Fill arc -->
+            <circle id="gauge-fill" cx="60" cy="60" r="48" fill="none"
+              stroke="url(#gauge-grad)" stroke-width="9" stroke-linecap="round"
+              stroke-dasharray="301.59" stroke-dashoffset="301.59"/>
+          </svg>
+          <!-- Center content -->
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+            <span id="gauge-emoji" style="font-size:2rem;"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STATS GRID ── -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+
+      <!-- Pump Probability -->
+      <div class="card card-lift accent-pink" style="padding:16px 18px;">
+        <p style="font-family:'Space Mono',monospace;font-size:.58rem;color:rgba(255,255,255,.38);letter-spacing:.1em;margin-bottom:8px;" class="stat-label">PUMP PROB.</p>
+        <p id="pump-num" style="font-family:'Space Mono',monospace;font-size:2rem;font-weight:700;line-height:1;margin-bottom:8px;color:#ff6b35;">0%</p>
+        <div class="prog-track" style="margin-bottom:8px;">
+          <div id="pump-bar" class="prog-bar" style="background:linear-gradient(90deg,#ff6b35,#ff2d78);"></div>
+        </div>
+        <p id="pump-desc" style="font-size:.72rem;color:rgba(255,255,255,.35);"></p>
+      </div>
+
+      <!-- Meme Potential -->
+      <div class="card card-lift accent-gold" style="padding:16px 18px;">
+        <p style="font-family:'Space Mono',monospace;font-size:.58rem;color:rgba(255,255,255,.38);letter-spacing:.1em;margin-bottom:8px;" class="stat-label">MEME POTENTIAL</p>
+        <div id="meme-stars" style="display:flex;gap:2px;margin-bottom:6px;"></div>
+        <p id="meme-label" style="font-size:.78rem;font-weight:700;line-height:1.3;margin-bottom:4px;"></p>
+        <p id="meme-desc" style="font-size:.7rem;color:rgba(255,255,255,.35);"></p>
+      </div>
+
+      <!-- Social Volume -->
+      <div class="card card-lift accent-cyan" style="padding:16px 18px;">
+        <p style="font-family:'Space Mono',monospace;font-size:.58rem;color:rgba(255,255,255,.38);letter-spacing:.1em;margin-bottom:8px;" class="stat-label">SOCIAL VOLUME</p>
+        <p id="vol-num" style="font-family:'Space Mono',monospace;font-size:1.5rem;font-weight:700;line-height:1;margin-bottom:4px;color:#00d4ff;"></p>
+        <p id="vol-trend" style="font-size:.7rem;color:rgba(255,255,255,.35);"></p>
+      </div>
+
+      <!-- Risk Level -->
+      <div class="card card-lift accent-purple" style="padding:16px 18px;">
+        <p style="font-family:'Space Mono',monospace;font-size:.58rem;color:rgba(255,255,255,.38);letter-spacing:.1em;margin-bottom:8px;" class="stat-label">RISK LEVEL</p>
+        <p id="risk-label" style="font-size:1rem;font-weight:700;line-height:1.3;margin-bottom:4px;"></p>
+        <p id="risk-desc" style="font-size:.7rem;color:rgba(255,255,255,.35);"></p>
+      </div>
+    </div>
+
+    <!-- ── TRADING IDEA ── -->
+    <div class="card card-lift glow-purple-card" style="padding:20px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <div style="width:32px;height:32px;border-radius:10px;background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.35);display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;">💡</div>
+        <span style="font-family:'Space Mono',monospace;font-size:.62rem;color:rgba(255,255,255,.38);letter-spacing:.08em;">QUICK TRADING IDEA</span>
+        <span style="margin-left:auto;padding:3px 10px;border-radius:99px;font-size:.62rem;background:rgba(124,58,237,.18);color:#a78bfa;border:1px solid rgba(124,58,237,.28);font-weight:600;">AI Generated</span>
+      </div>
+      <p id="trade-idea" style="font-size:.84rem;color:rgba(255,255,255,.75);line-height:1.65;margin-bottom:14px;"></p>
+      <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,.06);padding-top:12px;">
+        <span style="font-size:.7rem;color:rgba(255,255,255,.28);">Strategy type</span>
+        <span id="strategy-tag" style="font-family:'Space Mono',monospace;font-size:.72rem;color:#a78bfa;font-weight:700;"></span>
+      </div>
+    </div>
+
+    <!-- ── PRICE CHART ── -->
+    <div class="card" style="padding:20px;margin-bottom:12px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+        <div>
+          <p id="chart-label" style="font-family:'Space Mono',monospace;font-size:.62rem;color:rgba(255,255,255,.38);letter-spacing:.1em;margin-bottom:3px;">SIMULATED PRICE ACTION</p>
+          <p id="chart-sub" style="font-size:.7rem;color:rgba(255,255,255,.22);"></p>
+        </div>
+        <div style="display:flex;gap:4px;">
+          <button onclick="setRange('7d')"  data-r="7d"  class="rng-btn">7D</button>
+          <button onclick="setRange('30d')" data-r="30d" class="rng-btn">30D</button>
+          <button onclick="setRange('90d')" data-r="90d" class="rng-btn active">90D</button>
+        </div>
+      </div>
+      <!-- Chart type tabs -->
+      <div style="display:flex;gap:6px;margin-bottom:12px;">
+        <button class="ctype-btn active" id="ctype-line" onclick="setChartType('line')">Line</button>
+        <button class="ctype-btn" id="ctype-candle" onclick="setChartType('candle')">Candle <span class="pro-pip">PRO</span></button>
+        <button class="ctype-btn" id="ctype-rsi" onclick="setChartType('rsi')">RSI <span class="pro-pip">PRO</span></button>
+      </div>
+      <div style="height:210px;position:relative;" id="chart-wrap">
+        <canvas id="chart-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- ── PRO ADVANCED STATS (Pro only) ── -->
+    <div id="adv-stats-card" class="card pro-lock" style="padding:20px;margin-bottom:12px;display:none;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <div style="width:32px;height:32px;border-radius:10px;background:rgba(124,58,237,.18);border:1px solid rgba(124,58,237,.3);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;">🔬</div>
+        <span style="font-family:'Space Mono',monospace;font-size:.62rem;color:rgba(255,255,255,.38);letter-spacing:.08em;">ADVANCED SIGNAL DATA</span>
+        <span style="margin-left:auto;font-size:.65rem;font-weight:700;color:#a78bfa;font-family:'Space Mono',monospace;">PRO</span>
+      </div>
+      <!-- Short Interest -->
+      <div class="adv-stat-item">
+        <span style="color:rgba(255,255,255,.55);min-width:110px;">Short Interest</span>
+        <div class="adv-stat-bar-wrap"><div class="adv-stat-bar" id="si-bar" style="background:linear-gradient(90deg,#ff2d78,#ff6b35);width:0%;"></div></div>
+        <span id="si-val" style="font-family:'Space Mono',monospace;font-size:.78rem;font-weight:700;color:#ff6b35;min-width:42px;text-align:right;"></span>
+      </div>
+      <!-- IV Percentile -->
+      <div class="adv-stat-item">
+        <span style="color:rgba(255,255,255,.55);min-width:110px;">IV Percentile</span>
+        <div class="adv-stat-bar-wrap"><div class="adv-stat-bar" id="iv-bar" style="background:linear-gradient(90deg,#7c3aed,#00d4ff);width:0%;"></div></div>
+        <span id="iv-val" style="font-family:'Space Mono',monospace;font-size:.78rem;font-weight:700;color:#00d4ff;min-width:42px;text-align:right;"></span>
+      </div>
+      <!-- Sentiment split -->
+      <div class="adv-stat-item" style="flex-direction:column;align-items:flex-start;gap:8px;">
+        <div style="display:flex;width:100%;justify-content:space-between;align-items:center;">
+          <span style="color:rgba(255,255,255,.55);">Sentiment Split</span>
+          <span style="font-size:.7rem;color:rgba(255,255,255,.3);">
+            <span id="bull-pct" style="color:#00ff88;font-weight:700;font-family:'Space Mono',monospace;"></span> Bull /
+            <span id="bear-pct" style="color:#ff2d78;font-weight:700;font-family:'Space Mono',monospace;"></span> Bear
+          </span>
+        </div>
+        <div style="width:100%;height:6px;border-radius:99px;overflow:hidden;background:rgba(255,45,120,.3);">
+          <div id="bull-bar" style="height:100%;border-radius:99px;background:linear-gradient(90deg,#00ff88,#00d4ff);width:0%;transition:width 1.2s cubic-bezier(.4,0,.2,1);"></div>
+        </div>
+      </div>
+      <!-- Pro lock overlay (shown for free users) -->
+      <div class="pro-lock-overlay" id="adv-stats-lock" onclick="openModal('activate')" style="border-radius:16px;">
+        <span style="font-size:1.8rem;">🔒</span>
+        <div class="pro-lock-badge">PRO FEATURE</div>
+        <div style="font-size:.72rem;color:rgba(255,255,255,.4);margin-top:4px;">Tap to unlock advanced stats</div>
+      </div>
+    </div>
+
+    <!-- ── SOCIAL HOOKS ── -->
+    <div class="card" style="padding:20px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <div style="width:32px;height:32px;border-radius:10px;background:rgba(255,45,120,.15);border:1px solid rgba(255,45,120,.25);display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;">📣</div>
+        <span style="font-family:'Space Mono',monospace;font-size:.62rem;color:rgba(255,255,255,.38);letter-spacing:.08em;">VIRAL HOOKS</span>
+        <span style="font-size:.7rem;color:rgba(255,255,255,.25);margin-left:auto;">ready to post</span>
+      </div>
+
+      <!-- TikTok -->
+      <div class="tiktok-card" style="border-radius:12px;padding:14px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:.78rem;font-weight:700;color:rgba(255,255,255,.72);display:flex;align-items:center;gap:6px;">
+            <span style="display:inline-block;width:18px;height:18px;border-radius:4px;background:linear-gradient(135deg,#ff0050,#00f2ea);font-size:.55rem;text-align:center;line-height:18px;">▶</span>
+            TikTok Hook
+          </span>
+          <button onclick="copyHook('tiktok')" class="btn-ghost" style="padding:4px 10px;border-radius:8px;font-size:.68rem;">Copy</button>
+        </div>
+        <p id="tiktok-hook" style="font-size:.78rem;color:rgba(255,255,255,.52);line-height:1.55;"></p>
+      </div>
+
+      <!-- X / Twitter -->
+      <div class="twitter-card" style="border-radius:12px;padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:.78rem;font-weight:700;color:rgba(255,255,255,.72);display:flex;align-items:center;gap:6px;">
+            <span style="display:inline-block;width:18px;height:18px;border-radius:4px;background:#000;border:1px solid rgba(255,255,255,.2);font-size:.65rem;text-align:center;line-height:18px;font-weight:900;">𝕏</span>
+            X / Twitter Hook
+          </span>
+          <button onclick="copyHook('twitter')" class="btn-ghost" style="padding:4px 10px;border-radius:8px;font-size:.68rem;">Copy</button>
+        </div>
+        <p id="twitter-hook" style="font-size:.78rem;color:rgba(255,255,255,.52);line-height:1.55;white-space:pre-line;"></p>
+      </div>
+    </div>
+
+    <!-- ── SIGNAL CARD ── -->
+    <div class="card" style="padding:20px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <div style="width:32px;height:32px;border-radius:10px;background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.2);display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;">🃏</div>
+        <span style="font-family:'Space Mono',monospace;font-size:.62rem;color:rgba(255,255,255,.38);letter-spacing:.08em;">SIGNAL CARD</span>
+        <span style="font-size:.7rem;color:rgba(255,255,255,.25);margin-left:auto;">share anywhere</span>
+      </div>
+
+      <!-- ════════════════════════════════
+           MEME CARD  (html2canvas target)
+           Fixed 600×360 px logical layout
+      ════════════════════════════════ -->
+      <div id="meme-card" style="width:100%;padding:28px 28px 22px;">
+
+        <!-- BG grid overlay -->
+        <div id="meme-card-grid" style="opacity:.12;"></div>
+
+        <!-- Subtle radial glow spots -->
+        <div style="position:absolute;top:-30px;right:-30px;width:200px;height:200px;
+          background:radial-gradient(circle,rgba(0,255,136,.18),transparent 70%);
+          border-radius:50%;pointer-events:none;"></div>
+        <div style="position:absolute;bottom:-20px;left:-20px;width:160px;height:160px;
+          background:radial-gradient(circle,rgba(124,58,237,.15),transparent 70%);
+          border-radius:50%;pointer-events:none;"></div>
+
+        <div style="position:relative;z-index:1;">
+
+          <!-- ── Card header ── -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
+            <div style="display:flex;align-items:center;gap:9px;">
+              <div style="width:32px;height:32px;border-radius:9px;
+                background:linear-gradient(135deg,#00ff88,#00d4ff);
+                display:flex;align-items:center;justify-content:center;
+                color:#07071a;font-size:1rem;font-weight:900;flex-shrink:0;">⚡</div>
+              <div>
+                <div style="font-family:'Space Mono',monospace;font-size:.85rem;font-weight:700;
+                  background:linear-gradient(135deg,#00ff88,#00d4ff,#7c3aed);
+                  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                  background-clip:text;">ViralSignalAI</div>
+                <div style="font-family:'Space Mono',monospace;font-size:.55rem;
+                  color:rgba(255,255,255,.3);letter-spacing:.06em;margin-top:1px;">SIGNAL REPORT</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div id="card-date" style="font-family:'Space Mono',monospace;font-size:.62rem;color:rgba(255,255,255,.35);"></div>
+              <div style="font-family:'Space Mono',monospace;font-size:.55rem;color:rgba(0,255,136,.45);margin-top:2px;">LIVE SIGNAL</div>
+            </div>
+          </div>
+
+          <!-- ── Main content: gauge left, score right ── -->
+          <div style="display:flex;align-items:center;gap:20px;margin-bottom:22px;">
+
+            <!-- SVG arc gauge -->
+            <div style="position:relative;width:110px;height:110px;flex-shrink:0;">
+              <svg viewBox="0 0 110 110" style="width:100%;height:100%;transform:rotate(-90deg);">
+                <defs>
+                  <linearGradient id="cg" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%"   stop-color="#7c3aed"/>
+                    <stop offset="45%"  stop-color="#00d4ff"/>
+                    <stop offset="100%" stop-color="#00ff88"/>
+                  </linearGradient>
+                  <filter id="cg-glow">
+                    <feGaussianBlur stdDeviation="2.5" result="blur"/>
+                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                </defs>
+                <!-- Outer decorative ring -->
+                <circle cx="55" cy="55" r="50" fill="none"
+                  stroke="rgba(0,255,136,.08)" stroke-width="1"
+                  stroke-dasharray="4 8"/>
+                <!-- Track -->
+                <circle cx="55" cy="55" r="42" fill="none"
+                  stroke="rgba(255,255,255,.06)" stroke-width="9"/>
+                <!-- Fill -->
+                <circle id="card-gauge-fill" cx="55" cy="55" r="42" fill="none"
+                  stroke="url(#cg)" stroke-width="9" stroke-linecap="round"
+                  stroke-dasharray="263.89" stroke-dashoffset="263.89"
+                  filter="url(#cg-glow)"/>
+              </svg>
+              <!-- Centre emoji -->
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+                <span id="card-gauge-emoji" style="font-size:1.8rem;"></span>
+              </div>
+            </div>
+
+            <!-- Score + label -->
+            <div style="flex:1;min-width:0;">
+              <div id="card-tickers" style="font-family:'Space Mono',monospace;font-size:.78rem;
+                font-weight:700;color:rgba(0,255,136,.75);letter-spacing:.06em;margin-bottom:6px;"></div>
+              <div style="display:flex;align-items:baseline;gap:5px;margin-bottom:4px;">
+                <span id="card-score-text" style="font-family:'Space Mono',monospace;font-size:3.8rem;
+                  font-weight:900;line-height:1;letter-spacing:-.02em;
+                  background:linear-gradient(135deg,#00ff88,#00d4ff);
+                  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                  background-clip:text;"></span>
+                <span style="font-family:'Space Mono',monospace;font-size:1.2rem;
+                  color:rgba(255,255,255,.2);font-weight:400;">/100</span>
+              </div>
+              <div style="font-family:'Space Mono',monospace;font-size:.6rem;
+                color:rgba(255,255,255,.35);letter-spacing:.12em;margin-bottom:8px;">VIRAL SCORE</div>
+              <div id="card-label" style="font-size:.9rem;font-weight:700;line-height:1.2;"></div>
+            </div>
+          </div>
+
+          <!-- ── Score progress bar ── -->
+          <div style="margin-bottom:18px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <span style="font-family:'Space Mono',monospace;font-size:.58rem;
+                color:rgba(255,255,255,.3);letter-spacing:.08em;">VIRAL INTENSITY</span>
+              <span id="card-score-pct" style="font-family:'Space Mono',monospace;font-size:.58rem;
+                color:rgba(0,255,136,.6);"></span>
+            </div>
+            <div style="height:6px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;">
+              <div id="card-prog-bar" style="height:100%;border-radius:99px;width:0%;
+                background:linear-gradient(90deg,#7c3aed,#00d4ff,#00ff88);
+                box-shadow:0 0 8px rgba(0,255,136,.5);
+                transition:width 1.4s cubic-bezier(.4,0,.2,1);"></div>
+            </div>
+          </div>
+
+          <!-- ── Stats row ── -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:18px;">
+            <div style="background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.2);
+              border-radius:10px;padding:9px 10px;text-align:center;">
+              <div id="card-pump" style="font-family:'Space Mono',monospace;font-size:.9rem;
+                font-weight:700;color:#ff6b35;line-height:1;margin-bottom:3px;"></div>
+              <div style="font-size:.55rem;color:rgba(255,255,255,.3);letter-spacing:.05em;">PUMP PROB</div>
+            </div>
+            <div style="background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.18);
+              border-radius:10px;padding:9px 10px;text-align:center;">
+              <div id="card-meme" style="font-size:.8rem;line-height:1;margin-bottom:3px;"></div>
+              <div style="font-size:.55rem;color:rgba(255,255,255,.3);letter-spacing:.05em;">MEME RTG</div>
+            </div>
+            <div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.18);
+              border-radius:10px;padding:9px 10px;text-align:center;">
+              <div id="card-vol" style="font-family:'Space Mono',monospace;font-size:.75rem;
+                font-weight:700;color:#00d4ff;line-height:1;margin-bottom:3px;word-break:break-all;"></div>
+              <div style="font-size:.55rem;color:rgba(255,255,255,.3);letter-spacing:.05em;">SOCIAL VOL</div>
+            </div>
+            <div style="background:rgba(255,45,120,.06);border:1px solid rgba(255,45,120,.18);
+              border-radius:10px;padding:9px 10px;text-align:center;">
+              <div id="card-risk" style="font-size:.7rem;font-weight:700;line-height:1.2;margin-bottom:3px;"></div>
+              <div style="font-size:.55rem;color:rgba(255,255,255,.3);letter-spacing:.05em;">RISK LVL</div>
+            </div>
+          </div>
+
+          <!-- ── Trading idea preview ── -->
+          <div style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);
+            border-radius:12px;padding:12px 14px;margin-bottom:18px;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+              <span style="font-size:.8rem;">💡</span>
+              <span style="font-family:'Space Mono',monospace;font-size:.58rem;
+                color:rgba(124,58,237,.8);letter-spacing:.08em;">QUICK TRADING IDEA</span>
+              <span id="card-strat-tag" style="margin-left:auto;font-family:'Space Mono',monospace;
+                font-size:.58rem;color:#a78bfa;font-weight:700;white-space:nowrap;"></span>
+            </div>
+            <p id="card-idea" style="font-size:.72rem;color:rgba(255,255,255,.58);
+              line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;
+              -webkit-box-orient:vertical;overflow:hidden;"></p>
+          </div>
+
+          <!-- ── Footer ── -->
+          <div style="display:flex;align-items:center;justify-content:space-between;
+            padding-top:10px;border-top:1px solid rgba(255,255,255,.06);">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div style="width:18px;height:18px;border-radius:5px;
+                background:linear-gradient(135deg,#00ff88,#00d4ff);
+                display:flex;align-items:center;justify-content:center;
+                color:#07071a;font-size:.6rem;font-weight:900;">⚡</div>
+              <span style="font-family:'Space Mono',monospace;font-size:.6rem;
+                color:rgba(255,255,255,.28);">viralsignal.ai</span>
+            </div>
+            <span style="font-family:'Space Mono',monospace;font-size:.55rem;
+              color:rgba(255,255,255,.2);">For entertainment only · Not financial advice</span>
+          </div>
+
+        </div><!-- /relative z-1 -->
+      </div><!-- /#meme-card -->
+
+      <!-- Export button below the preview -->
+      <button onclick="exportCard()" class="btn-export"
+        style="width:100%;padding:15px;border-radius:16px;font-size:.95rem;
+          display:flex;align-items:center;justify-content:center;gap:9px;">
+        <span style="font-size:1.1rem;">📸</span>
+        <span>Export Meme Card as PNG</span>
+      </button>
+    </div>
+
+    <!-- Analyze another -->
+    <button onclick="scrollToInput()" class="btn-ghost" style="width:100%;padding:14px;border-radius:16px;font-size:.875rem;font-weight:500;margin-bottom:8px;">
+      ⚡ Analyze Another Ticker
+    </button>
+
+  </div><!-- /results -->
+
+  <!-- ══════════════ SIGNAL HISTORY (Pro) ══════════════ -->
+  <div id="history-section" style="display:none;margin-bottom:24px;">
+    <div class="card pro-lock" style="padding:20px;position:relative;">
+      <!-- Lock overlay (free users) -->
+      <div class="pro-lock-overlay" id="history-lock" onclick="openModal('activate')" style="border-radius:16px;">
+        <span style="font-size:1.8rem;">📋</span>
+        <div class="pro-lock-badge">PRO FEATURE</div>
+        <div style="font-size:.72rem;color:rgba(255,255,255,.4);margin-top:4px;">Signal history — last 10 runs</div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:32px;height:32px;border-radius:10px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;">📋</div>
+          <span style="font-family:'Space Mono',monospace;font-size:.62rem;color:rgba(255,255,255,.38);letter-spacing:.08em;">SIGNAL HISTORY</span>
+        </div>
+        <button onclick="clearHistory()" class="btn-ghost" style="padding:5px 10px;border-radius:8px;font-size:.68rem;color:rgba(255,45,120,.55);">Clear</button>
+      </div>
+      <div id="history-list" style="min-height:40px;">
+        <p style="font-size:.78rem;color:rgba(255,255,255,.28);text-align:center;padding:16px 0;" id="history-empty-msg">No signals yet — run your first analysis!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ HOW IT WORKS ══════════════ -->
+  <section class="reveal" style="margin-top:16px;margin-bottom:40px;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <p style="font-family:'Space Mono',monospace;font-size:.62rem;color:rgba(255,255,255,.32);letter-spacing:.12em;margin-bottom:6px;">THE ENGINE</p>
+      <h3 style="font-size:1.5rem;font-weight:800;letter-spacing:-.01em;">How It Works</h3>
+    </div>
+
+    <div class="how-scroll">
+      <div class="card how-card" style="padding:20px;">
+        <div style="width:44px;height:44px;border-radius:12px;margin-bottom:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:linear-gradient(135deg,rgba(0,255,136,.15),rgba(0,212,255,.07));border:1px solid rgba(0,255,136,.2);">📊</div>
+        <div style="font-family:'Space Mono',monospace;font-size:.62rem;color:rgba(0,255,136,.6);margin-bottom:6px;">STEP 01</div>
+        <h4 style="font-size:.9rem;font-weight:700;margin-bottom:6px;">Enter Any Ticker</h4>
+        <p style="font-size:.75rem;color:rgba(255,255,255,.38);line-height:1.55;">Stocks, crypto, or TikTok trend keywords — our engine handles it all.</p>
+      </div>
+
+      <div class="card how-card" style="padding:20px;">
+        <div style="width:44px;height:44px;border-radius:12px;margin-bottom:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:linear-gradient(135deg,rgba(124,58,237,.15),rgba(255,45,120,.07));border:1px solid rgba(124,58,237,.2);">🧠</div>
+        <div style="font-family:'Space Mono',monospace;font-size:.62rem;color:rgba(124,58,237,.7);margin-bottom:6px;">STEP 02</div>
+        <h4 style="font-size:.9rem;font-weight:700;margin-bottom:6px;">AI Scans Signals</h4>
+        <p style="font-size:.75rem;color:rgba(255,255,255,.38);line-height:1.55;">Reddit chatter, TikTok trends, options flow, and social volume spikes.</p>
+      </div>
+
+      <div class="card how-card" style="padding:20px;">
+        <div style="width:44px;height:44px;border-radius:12px;margin-bottom:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:linear-gradient(135deg,rgba(255,107,53,.15),rgba(255,45,120,.07));border:1px solid rgba(255,107,53,.2);">🎯</div>
+        <div style="font-family:'Space Mono',monospace;font-size:.62rem;color:rgba(255,107,53,.7);margin-bottom:6px;">STEP 03</div>
+        <h4 style="font-size:.9rem;font-weight:700;margin-bottom:6px;">Get Your Signal</h4>
+        <p style="font-size:.75rem;color:rgba(255,255,255,.38);line-height:1.55;">Viral score, pump probability, meme potential, and a quick trading idea.</p>
+      </div>
+    </div>
+
+    <!-- Feature pills -->
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:18px;">
+      <span class="card" style="padding:6px 14px;border-radius:99px;font-size:.7rem;color:rgba(255,255,255,.38);">Reddit Sentiment</span>
+      <span class="card" style="padding:6px 14px;border-radius:99px;font-size:.7rem;color:rgba(255,255,255,.38);">Options Flow</span>
+      <span class="card" style="padding:6px 14px;border-radius:99px;font-size:.7rem;color:rgba(255,255,255,.38);">TikTok Trends</span>
+      <span class="card" style="padding:6px 14px;border-radius:99px;font-size:.7rem;color:rgba(255,255,255,.38);">WSB Chatter</span>
+      <span class="card" style="padding:6px 14px;border-radius:99px;font-size:.7rem;color:rgba(255,255,255,.38);">Short Interest</span>
+      <span class="card" style="padding:6px 14px;border-radius:99px;font-size:.7rem;color:rgba(255,255,255,.38);">Volume Spikes</span>
+    </div>
+  </section>
+
+  <!-- ══════════════ FOOTER ══════════════ -->
+  <footer style="border-top:1px solid rgba(255,255,255,.06);padding-top:28px;padding-bottom:max(80px,env(safe-area-inset-bottom));">
+
+    <!-- Pro key unlock -->
+    <div class="card" style="padding:16px 18px;margin-bottom:20px;text-align:center;">
+      <p style="font-size:.75rem;color:rgba(255,255,255,.32);margin-bottom:10px;">Have a Pro key? Unlock unlimited signals:</p>
+      <div style="display:flex;gap:8px;max-width:320px;margin:0 auto;">
+        <input id="footer-key-inp" type="text" placeholder="VS-XXXX-XXXX"
+          class="inp" style="flex:1;border-radius:10px;padding:9px 12px;font-size:.75rem;font-family:'Space Mono',monospace;" />
+        <button onclick="applyKey('footer-key-inp')" class="btn-gen" style="border-radius:10px;padding:9px 16px;font-size:.75rem;white-space:nowrap;">Unlock</button>
+      </div>
+    </div>
+
+    <!-- ⚠️ DISCLAIMER — DO NOT REMOVE -->
+    <div class="disclaimer-box" style="margin-bottom:20px;">
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <span style="font-size:1rem;flex-shrink:0;margin-top:1px;">⚠️</span>
+        <div>
+          <p style="font-size:.72rem;font-weight:700;color:#fbbf24;margin-bottom:5px;">Important Disclaimer</p>
+          <p style="font-size:.72rem;color:rgba(255,255,255,.38);line-height:1.6;">
+            <strong style="color:rgba(255,255,255,.55);">For entertainment and educational purposes only. Not financial advice.</strong>
+            ViralSignal AI generates simulated signals based on algorithmic models and must not be used as the basis for any real investment decisions.
+            All scores, probabilities, ratings, and trading ideas are for demonstration and entertainment only.
+            Past meme stock behavior does not indicate future results.
+            Always consult a licensed financial advisor before making investment decisions.
+            Trading stocks, options, and cryptocurrencies involves substantial risk of loss and is not suitable for all investors.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center;padding-bottom:8px;">
+      <p class="grad-text" style="font-family:'Space Mono',monospace;font-size:.82rem;font-weight:700;margin-bottom:4px;">ViralSignal AI</p>
+      <p style="font-size:.68rem;color:rgba(255,255,255,.16);">© 2025 ViralSignal AI · Not financial advice · For entertainment only</p>
+    </div>
+  </footer>
+
+</div><!-- /page -->
+
+<!-- ═══════════════════════════════════════════════════════
+     JAVASCRIPT — logic unchanged, UI hooks updated
+═══════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ── STATE ────────────────────────────────────── */
+let isPro      = false;
+let chart      = null;
+let signal     = null;
+let curRange   = '90d';
+let curCType   = 'line';   // 'line' | 'candle' | 'rsi'
+let stickyVisible = false;
+
+const LIMIT    = 5;
+const LS_USE   = 'vs_usage_v1';
+const LS_KEY   = 'vs_prokey_v1';
+const LS_HIST  = 'vs_history_v1';
+
+/* ── USAGE TRACKING ───────────────────────────── */
+function getUsage() {
+  try {
+    const d = JSON.parse(localStorage.getItem(LS_USE) || '{}');
+    // Permanent counter — no date check, no reset
+    return { n: typeof d.n === 'number' ? d.n : 0 };
+  } catch { return { n: 0 }; }
+}
+function saveUsage(d) { try { localStorage.setItem(LS_USE, JSON.stringify(d)); } catch {} }
+function bumpUsage() { const d = getUsage(); d.n++; saveUsage(d); refreshUsageUI(); }
+function remaining() { return isPro ? Infinity : Math.max(0, LIMIT - getUsage().n); }
+
+function refreshUsageUI() {
+  const r    = remaining();
+  const pill = document.getElementById('usage-pill');
+  const usesEl = document.getElementById('uses-left');
+  const line = document.getElementById('usage-line');
+
+  if (isPro) {
+    pill.style.display = 'block';
+    pill.innerHTML = '∞ Pro';
+    line.textContent = 'Unlimited Pro access ⭐';
+    return;
+  }
+  usesEl.textContent = r;
+  pill.style.display = 'block';
+  if (r === 0) {
+    line.textContent = '🔒 Free limit reached — upgrade to Pro for unlimited signals';
+    line.style.color = 'rgba(251,191,36,.7)';
+  } else {
+    line.textContent = `${r} free signal${r!==1?'s':''} remaining · Upgrade for unlimited`;
+    line.style.color = '';
+  }
+}
+
+/* ── STRIPE PAYMENT CONFIG ───────────────────────────────────────────────────
+ *
+ *  SETUP (two minutes):
+ *  ─────────────────────
+ *  Option A — Stripe Payment Link (zero backend, recommended for static sites)
+ *  1. Dashboard → Payment Links → Create → $19.99 one-time → set success URL to:
+ *       https://yourdomain.com/?payment=success
+ *  2. Paste the resulting https://buy.stripe.com/xxx URL into STRIPE_PAYMENT_LINK below.
+ *  3. Leave STRIPE_CHECKOUT_ENDPOINT empty.
+ *
+ *  Option B — Vercel Serverless Function (more secure, verifies payment server-side)
+ *  1. Deploy api/create-checkout.js (see instructions at bottom of this file).
+ *  2. Leave STRIPE_PAYMENT_LINK empty, set STRIPE_CHECKOUT_ENDPOINT = '/api/create-checkout'.
+ *
+ *  Test mode: use pk_test_... key and buy.stripe.com test links.
+ *  Live mode: swap to pk_live_... and live Payment Link when ready to ship.
+ * ─────────────────────────────────────────────────────────────────────────── */
+const STRIPE_PK               = 'pk_test_51Tgd02A3TVl24ANR5xurrH8rb2mdY5hjoZQt7s15I4ewl5wc7HZHN8RipVUjiAvgYo8ClueGAH5kSRemNfJpPgim00NB9kfDkU';   // ← replace
+const STRIPE_PAYMENT_LINK     = 'https://buy.stripe.com/test_aFa00ia2u5bC6pPgcLcZa00'; // ← replace (Option A)
+const STRIPE_CHECKOUT_ENDPOINT = '';   // ← set to '/api/create-checkout' for Option B
+
+/* ── STRIPE HELPERS ───────────────────────────────────────────────────────── */
+
+/** Generate a VS-XXXX-XXXX-XXXX license key (cryptographically random) */
+function generateVSKey() {
+  const seg = () => {
+    const arr = new Uint8Array(3);
+    crypto.getRandomValues(arr);
+    return Array.from(arr, b => b.toString(36).toUpperCase()).join('').slice(0, 4).padEnd(4, '0');
+  };
+  return `VS-${seg()}-${seg()}-${seg()}`;
+}
+
+/** Store a VS- key and activate Pro */
+function applyGeneratedKey(key) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify({ key, activatedAt: Date.now() })); } catch {}
+  isPro = true;
+  activatePro();
+}
+
+/** Copy the key shown in the success pane */
+function copySuccessKey() {
+  const kd = document.getElementById('success-key-display');
+  const btn = document.getElementById('copy-key-btn');
+  if (!kd || !btn) return;
+  const key = kd.firstChild.textContent.trim();
+  navigator.clipboard.writeText(key).then(() => {
+    btn.textContent = '✓ DONE';
+    setTimeout(() => btn.textContent = 'COPY', 2000);
+  }).catch(() => toast('❌', 'Copy failed — select the key manually'));
+}
+
+/**
+ * Redirect to Stripe Checkout.
+ *
+ * Option A: Payment Link (no backend) — just redirect.
+ * Option B: Serverless function — POST for a session URL then redirect.
+ */
+async function stripeCheckout() {
+  const btn = document.getElementById('btn-stripe-pay');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span>⏳</span> Redirecting to Stripe…'; }
+
+  try {
+    if (STRIPE_PAYMENT_LINK && !STRIPE_PAYMENT_LINK.includes('YOUR_')) {
+      // ── Option A: Payment Link ──────────────────────────────────────────────
+      // Pre-generate a key and stash it in sessionStorage so we can pick it
+      // up when Stripe redirects back to ?payment=success.
+      const pendingKey = generateVSKey();
+      try { sessionStorage.setItem('vs_pending_key', pendingKey); } catch {}
+      window.location.href = STRIPE_PAYMENT_LINK;
+
+    } else if (STRIPE_CHECKOUT_ENDPOINT) {
+      // ── Option B: Serverless function ──────────────────────────────────────
+      const res  = await fetch(STRIPE_CHECKOUT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId: 'price_YOUR_PRICE_ID' }), // ← replace with your Price ID
+      });
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const { url, key } = await res.json();
+      if (key) { try { sessionStorage.setItem('vs_pending_key', key); } catch {} }
+      window.location.href = url;
+
+    } else {
+      // Config not set — guide the developer
+      toast('⚙️', 'Set STRIPE_PAYMENT_LINK or STRIPE_CHECKOUT_ENDPOINT in the app');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;"><path d="M2 7h20v12a2 2 0 01-2 2H4a2 2 0 01-2-2V7z" fill="rgba(255,255,255,.18)"/><rect x="2" y="5" width="20" height="4" rx="1" fill="rgba(255,255,255,.4)"/><rect x="5" y="13" width="5" height="2" rx="1" fill="white"/></svg> Pay $19.99 — Lifetime Access'; }
+    }
+  } catch (err) {
+    console.error('[stripeCheckout]', err);
+    toast('❌', 'Could not connect to Stripe — please try again');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;"><path d="M2 7h20v12a2 2 0 01-2 2H4a2 2 0 01-2-2V7z" fill="rgba(255,255,255,.18)"/><rect x="2" y="5" width="20" height="4" rx="1" fill="rgba(255,255,255,.4)"/><rect x="5" y="13" width="5" height="2" rx="1" fill="white"/></svg> Pay $19.99 — Lifetime Access'; }
+  }
+}
+
+/**
+ * Called on page load — detects ?payment=success return from Stripe,
+ * retrieves the pre-generated key from sessionStorage, activates Pro,
+ * and shows the success pane with the key.
+ */
+function checkPaymentSuccess() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has('payment') || params.get('payment') !== 'success') return;
+
+  // Clean the URL so a refresh doesn't re-trigger this
+  const cleanUrl = window.location.origin + window.location.pathname;
+  history.replaceState({}, '', cleanUrl);
+
+  let key = params.get('vskey') || '';  // Option B may embed key in URL
+  if (!key) {
+    try { key = sessionStorage.getItem('vs_pending_key') || ''; } catch {}
+  }
+  if (!key || !validateKey(key)) {
+    key = generateVSKey();  // Fallback: generate fresh (payment already verified by Stripe)
+  }
+  try { sessionStorage.removeItem('vs_pending_key'); } catch {}
+
+  applyGeneratedKey(key);
+  // Slight delay so the page finishes rendering before the modal opens
+  setTimeout(() => showSuccessPane(key), 300);
+}
+
+/* ── PRO LICENSE ──────────────────────────────── */
+// Shim: footer key input
+function applyKey(inputId) {
+  const inp = document.getElementById(inputId);
+  if (!inp) return;
+  const k = inp.value.trim();
+  if (!validateKey(k)) {
+    toast('❌','Invalid key — check your email receipt for your VS- key');
+    inp.classList.add('shake'); setTimeout(()=>inp.classList.remove('shake'),400);
+    return;
+  }
+  try { localStorage.setItem(LS_KEY, JSON.stringify({ key: k, activatedAt: Date.now() })); } catch {}
+  isPro = true;
+  activatePro();
+  toast('⭐','Pro unlocked! Unlimited signals activated.');
+}
+
+function validateKey(k) {
+  if (!k) return false;
+  const upper = k.toUpperCase().trim();
+  // VS-XXXX-XXXX-XXXX (generated by ViralSignal checkout)
+  if (/^VS-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(upper)) return true;
+  // Legacy VS- prefix (any length)
+  if (upper.startsWith('VS-') && upper.length > 6) return true;
+  // Gumroad UUID format (legacy activations)
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(k)) return true;
+  return false;
+}
+
+function checkStoredKey() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    const k = data.key || raw;   // back-compat with old plain-string storage
+    if (validateKey(k)) { isPro = true; activatePro(); }
+  } catch {}
+}
+
+async function verifyLicense() {
+  const inp  = document.getElementById('modal-key-inp');
+  const msg  = document.getElementById('key-verify-msg');
+  const btn  = document.getElementById('btn-verify-key');
+  const lbl  = document.getElementById('btn-verify-label');
+  const k    = inp.value.trim();
+
+  if (!k) {
+    msg.style.color = '#ff6b35';
+    msg.textContent = '⚠ Please enter your license key';
+    inp.classList.add('shake'); setTimeout(()=>inp.classList.remove('shake'),400);
+    return;
+  }
+
+  // Show loading state
+  btn.disabled = true;
+  lbl.textContent = 'Verifying…';
+  msg.style.color = 'rgba(255,255,255,.32)';
+  msg.textContent = '⟳ Checking license…';
+
+  await new Promise(r => setTimeout(r, 900)); // Simulated async check
+
+  if (validateKey(k)) {
+    try { localStorage.setItem(LS_KEY, JSON.stringify({ key: k, activatedAt: Date.now() })); } catch {}
+    isPro = true;
+    activatePro();
+    msg.style.color = '#00ff88';
+    msg.textContent = '✓ License activated! Welcome to Pro.';
+    inp.classList.add('key-success-flash');
+    setTimeout(()=>inp.classList.remove('key-success-flash'), 800);
+    toast('⭐', 'Pro unlocked! Unlimited signals activated.');
+    setTimeout(() => closeModal(), 1400);
+  } else {
+    msg.style.color = '#ff2d78';
+    msg.textContent = '✕ Invalid key — check your email for your VS- key';
+    inp.classList.add('shake'); setTimeout(()=>inp.classList.remove('shake'),400);
+  }
+
+  btn.disabled = false;
+  lbl.textContent = 'Activate License';
+}
+
+function activatePro() {
+  document.getElementById('free-btn').style.display = 'none';
+  document.getElementById('pro-btn').style.display  = 'block';
+  // Hide lock overlays
+  ['adv-stats-lock','history-lock'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display='none';
+  });
+  // Show history section
+  const hs = document.getElementById('history-section');
+  if (hs) hs.style.display = 'block';
+  renderHistory();
+  refreshUsageUI();
+}
+
+/* ── MODAL ────────────────────────────────────── */
+function openModal(tab) {
+  document.getElementById('modal-overlay').style.display = 'flex';
+  if (tab) switchModalTab(tab);
+}
+function showModal() { openModal('upgrade'); }
+function closeModal() {
+  document.getElementById('modal-overlay').style.display = 'none';
+  // Reset: re-show tabs in case success pane hid them
+  const tabs = document.querySelector('.modal-tabs');
+  if (tabs) tabs.style.display = '';
+  const sp = document.getElementById('mpane-success');
+  if (sp) { sp.style.display = 'none'; sp.classList.remove('active'); }
+}
+function switchModalTab(name) {
+  // Success pane is outside the normal tab system
+  const sp = document.getElementById('mpane-success');
+  if (sp) sp.style.display = 'none';
+  const tabs = document.querySelector('.modal-tabs');
+  if (tabs) tabs.style.display = '';
+  ['upgrade','activate'].forEach(t => {
+    document.getElementById('mtab-'+t).classList.toggle('active', t===name);
+    document.getElementById('mpane-'+t).classList.toggle('active', t===name);
+  });
+}
+
+function showSuccessPane(key) {
+  // Hide tabs + regular panes, show success pane
+  const tabs = document.querySelector('.modal-tabs');
+  if (tabs) tabs.style.display = 'none';
+  ['upgrade','activate'].forEach(t => {
+    const el = document.getElementById('mpane-'+t);
+    if (el) el.classList.remove('active');
+    const tb = document.getElementById('mtab-'+t);
+    if (tb) tb.classList.remove('active');
+  });
+  const sp = document.getElementById('mpane-success');
+  if (sp) { sp.style.display = 'block'; sp.classList.add('active'); }
+  const kd = document.getElementById('success-key-display');
+  if (kd) kd.firstChild.textContent = key + ' ';
+  document.getElementById('modal-overlay').style.display = 'flex';
+}
+
+/* ── SIGNAL HISTORY ───────────────────────────── */
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(LS_HIST)||'[]'); } catch { return []; }
+}
+function saveToHistory(d) {
+  if (!isPro) return;
+  try {
+    let h = getHistory();
+    h.unshift({ ts: Date.now(), tickers: d.tickers, score: d.score, meme: d.meme, idea: d.idea });
+    h = h.slice(0, 10);
+    localStorage.setItem(LS_HIST, JSON.stringify(h));
+  } catch {}
+  renderHistory();
+}
+function clearHistory() {
+  try { localStorage.removeItem(LS_HIST); } catch {}
+  renderHistory();
+}
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const empty = document.getElementById('history-empty-msg');
+  if (!list) return;
+  const h = getHistory();
+  if (!h.length) {
+    if (empty) empty.style.display = 'block';
+    // remove any old rows
+    list.querySelectorAll('.history-row').forEach(r=>r.remove());
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  list.querySelectorAll('.history-row').forEach(r=>r.remove());
+  h.forEach((item, i) => {
+    const row = document.createElement('div');
+    row.className = 'history-row';
+    const sc = item.score;
+    const scColor = sc>=75?'#00ff88':sc>=55?'#ffd700':sc>=38?'#ff6b35':'#ff2d78';
+    const scBg    = sc>=75?'rgba(0,255,136,.12)':sc>=55?'rgba(255,215,0,.12)':sc>=38?'rgba(255,107,53,.12)':'rgba(255,45,120,.12)';
+    const dt = new Date(item.ts);
+    const dtStr = dt.toLocaleDateString(undefined,{month:'short',day:'numeric'})
+                + ' ' + dt.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+    row.innerHTML = `
+      <div class="history-score-pill" style="background:${scBg};color:${scColor};">${sc}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:.82rem;font-weight:600;color:rgba(255,255,255,.75);
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.tickers}</div>
+        <div style="font-size:.68rem;color:rgba(255,255,255,.28);font-family:'Space Mono',monospace;">${dtStr} · ${item.meme}</div>
+      </div>
+      <button class="btn-ghost" style="padding:5px 10px;border-radius:8px;font-size:.68rem;flex-shrink:0;"
+        onclick="rerunSignal(${i})">Re-run</button>
+    `;
+    list.appendChild(row);
+  });
+}
+function rerunSignal(i) {
+  const h = getHistory();
+  const item = h[i];
+  if (!item) return;
+  document.getElementById('ticker-inp').value = item.tickers;
+  scrollToInput();
+  setTimeout(() => runGenerate(), 400);
+}
+
+/* ── TOAST ────────────────────────────────────── */
+let toastTmr;
+function toast(icon, msg) {
+  clearTimeout(toastTmr);
+  document.getElementById('toast-icon').textContent = icon;
+  document.getElementById('toast-msg').textContent  = msg;
+  const wrap = document.getElementById('toast-wrap');
+  const el   = document.getElementById('toast');
+  wrap.style.display = 'block';
+  el.classList.remove('toast-hide');
+  el.classList.add('toast-show');
+  toastTmr = setTimeout(() => {
+    el.classList.remove('toast-show');
+    el.classList.add('toast-hide');
+    setTimeout(() => { wrap.style.display = 'none'; el.classList.remove('toast-hide'); }, 280);
+  }, 3000);
+}
+
+/* ── STICKY HEADER ON SCROLL ──────────────────── */
+function initStickyHeader() {
+  const hdr = document.getElementById('site-header');
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        hdr.classList.toggle('scrolled', window.scrollY > 32);
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
+}
+
+/* ── MOBILE STICKY CTA ────────────────────────── */
+function initMobileSticky() {
+  const cta = document.getElementById('mobile-sticky');
+  const inputCard = document.getElementById('input-card');
+  let lastY = 0;
+
+  window.addEventListener('scroll', () => {
+    const rect = inputCard.getBoundingClientRect();
+    const pastInput = rect.bottom < 0;
+
+    if (pastInput && !stickyVisible) {
+      stickyVisible = true;
+      cta.classList.add('visible');
+    } else if (!pastInput && stickyVisible) {
+      stickyVisible = false;
+      cta.classList.remove('visible');
+    }
+    lastY = window.scrollY;
+  }, { passive: true });
+}
+
+function mobileStickyAction() {
+  if (signal) {
+    // Already have results — scroll to generate input
+    scrollToInput();
+  } else {
+    runGenerate();
+  }
+}
+
+function updateMobileStickyLabel(hasResults) {
+  document.getElementById('mobile-sticky-icon').textContent = '⚡';
+  document.getElementById('mobile-sticky-label').textContent = hasResults ? 'Analyze Another' : 'Generate Signal';
+}
+
+/* ── SIGNAL DATA ──────────────────────────────── */
+/* ──────────────────────────────────────────────
+   SIGNAL DATA TABLES
+────────────────────────────────────────────── */
+// tier 1-5: 1=blue-chip, 2=watchlist, 3=meme-adjacent, 4=meme, 5=peak-degen
+// category used to pick context-specific hooks
+const KNOWN = {
+  // Peak degen / crypto
+  DOGE:5, SHIB:4, PEPE:5, MSTR:4, COIN:3, HOOD:3,
+  // Classic meme stocks
+  GME:4, AMC:3, CLOV:3, BBAI:3,
+  // AI / quantum
+  NVDA:5, PLTR:3, IONQ:3, QBTS:3, RGTI:3, ARQQ:3, BBAI:3,
+  // EV / green
+  TSLA:4, RIVN:3, LCID:2, NKLA:2, GOEV:2, BLNK:2, CHPT:2,
+  // Biotech / meme-adj
+  SNDL:3, TLRY:3, CLOV:3,
+  // Space / defense
+  RKLB:3, SPCE:3, ASTS:4, LUNR:3,
+  // Leveraged ETFs (high vol proxy)
+  TQQQ:4, SOXL:4, SQQQ:3, SOXS:3,
+  // Bitcoin miners
+  MARA:4, RIOT:4, CLSK:3, BTBT:3,
+  // Solar
+  SPWR:2, PLUG:2, FCEL:2,
+  // Options darlings
+  SMCI:4, MSTY:4, SOFI:2, UPST:2, AFRM:2,
+  // Mega-cap (baseline)
+  AAPL:2, MSFT:2, GOOG:2, AMZN:2, META:2, AMD:3,
+  // Index (lowest signal)
+  SPY:1, QQQ:1, IWM:1,
+};
+
+// Category metadata for context-specific copy
+const CAT = {
+  crypto:  ['DOGE','SHIB','PEPE','MSTR','COIN','BTBT'],
+  meme:    ['GME','AMC','CLOV','HOOD','BBAI'],
+  ai:      ['NVDA','PLTR','IONQ','QBTS','RGTI','ARQQ','AMD'],
+  ev:      ['TSLA','RIVN','LCID','NKLA','GOEV','BLNK','CHPT'],
+  space:   ['RKLB','SPCE','ASTS','LUNR'],
+  miner:   ['MARA','RIOT','CLSK','BTBT'],
+  solar:   ['SPWR','PLUG','FCEL'],
+  levered: ['TQQQ','SOXL','SQQQ','SOXS'],
+};
+function getCategory(ticker) {
+  for (const [cat, list] of Object.entries(CAT)) {
+    if (list.includes(ticker)) return cat;
+  }
+  return 'generic';
+}
+
+const BUZZ = [
+  'tiktok','viral','moon','rocket','tendies','yolo','squeeze','gamma',
+  'wsb','reddit','discord','trending','hot','fire','ai','crypto','meme',
+  'ape','rip','diamond','hands','fomo','btfd','ath','degen','pump',
+  'short','rug','whale','alpha','signal','catalyst','breakout','oversold',
+];
+
+const MEME_RATINGS = [
+  { min:92, emoji:'🤯', label:'ABSOLUTELY UNHINGED',  stars:5, desc:'Max degenerate energy — WSB front page material' },
+  { min:80, emoji:'🚀', label:'MOON MISSION MODE',    stars:5, desc:'Apes together strong — social volume is insane' },
+  { min:68, emoji:'⚡', label:'MAJOR HYPE VIBES',     stars:4, desc:'Reddit and FinTok are both cooking right now' },
+  { min:55, emoji:'🔥', label:'HEATING UP FAST',      stars:4, desc:'Chatter is accelerating — watch this closely' },
+  { min:42, emoji:'📈', label:'GAINING TRACTION',     stars:3, desc:'Early signal forming — check back in 24h' },
+  { min:30, emoji:'🌊', label:'MILD BUZZ',             stars:2, desc:'Whispers in the Discord — not confirmed yet' },
+  { min:15, emoji:'😴', label:'SLEEPING GIANT',        stars:1, desc:'Under the radar — patience required' },
+  { min:0,  emoji:'💤', label:'CRICKETS',              stars:1, desc:'Zero social presence right now' },
+];
+
+const RISKS = [
+  { min:85, label:'☢️ EXTREME',     color:'#ff2d78', desc:'For degens only — size for total loss' },
+  { min:70, label:'🔴 VERY HIGH',   color:'#ff6b35', desc:'Buckle up — violent moves both ways' },
+  { min:55, label:'🟡 HIGH',        color:'#ffd700', desc:'Elevated vol — tight stops essential' },
+  { min:38, label:'🟢 MODERATE',    color:'#00ff88', desc:'Manageable with proper position sizing' },
+  { min:0,  label:'🔵 LOW–MEDIUM',  color:'#00d4ff', desc:'Stable but upside may be limited' },
+];
+
+const IDEAS = [
+  (t,cat)=>cat==='crypto'
+    ? `$${t} showing classic crypto pump-and-dump pattern. If trading: buy only after a confirmed pullback (>12% from recent high), set a hard stop at -20% of entry, and never hold overnight into weekend. Max 0.5% portfolio in crypto plays.`
+    : `Consider a Poor Man's Covered Call on $${t}: buy a deep ITM LEAPS (6–12mo, delta ~0.80) then sell weekly OTM calls at ~15% above market. Captures 8–15% monthly premium. Defined risk, bullish bias.`,
+  (t,cat)=>cat==='meme'
+    ? `$${t} elevated short interest signals a potential squeeze. Watch for a volume surge >3× the 20-day average. If triggered: buy ATM calls 2–3 weeks out, target +60–80%, hard stop at -45% on premium. Keep size ≤1% of portfolio.`
+    : `$${t} 30-day call spread: buy ATM call, sell 20%-OTM call same expiry. ~2:1 reward/risk. Defined risk, benefits from IV expansion. Best if entered when IV rank <40%.`,
+  (t,cat)=>cat==='ev'
+    ? `EV sector momentum play on $${t}. Leaps diagonal: buy 1-year ATM call, sell 30-day 10%-OTM call every month. Defined risk, collects theta. Exit if stock drops >15% — sector correlation means correlated drawdowns.`
+    : `High meme velocity on $${t}. Bull call debit spread: buy nearest $5-wide spread ATM, target +50% on the spread, stop at -50%. Keep DTE 30–45 days to balance theta/gamma.`,
+  (t,cat)=>cat==='ai'
+    ? `AI sector leader $${t} — consider a 45-DTE ATM straddle ahead of earnings if IV rank is elevated. Delta-neutral, profits from a >8% move either direction. Close at 25% profit or 2× loss. Theta burns after day 30.`
+    : `Social volume spike on $${t}. Scalp play: ATM calls 1–2 weeks out when volume confirms price. Alert at +20% gain, hard exit at -40% loss on premium. Max 1–2% of portfolio — meme momentum reverses fast.`,
+  (t,_)=>`Wheel strategy on $${t}: sell CSP at 20-delta (~15–20% below market) to collect premium while waiting for a better entry. IV spike increases premium. If assigned, sell covered calls at 10–15% OTM every 2 weeks until called away.`,
+  (t,_)=>`Iron condor on $${t} if IV rank >70%: sell 15-delta put and call, buy 5-delta wings for protection. Max profit at expiry if stock stays range-bound. Collect ~25–35% of width as credit. Close at 50% profit.`,
+  (t,cat)=>cat==='levered'
+    ? `Leveraged ETF warning: $${t} experiences significant decay in sideways markets. Only use for directional swings lasting 1–5 days. Never hold through earnings or Fed decisions. Set a -8% trailing stop on entry.`
+    : `$${t} technical entry: wait for RSI(14) to dip below 40 and price to test the 20-day EMA. Enter with a 1/3 position, add second third on confirmation candle, hold third as a runner. Stop below the 50-day MA.`,
+  (t,_)=>`Risk-reversal on $${t}: sell OTM put (20-delta) to fund buying an OTM call (25-delta), same expiry (30–45 DTE). Net premium neutral or slight debit. Profits from bullish move with defined downside. Requires margin for the short put.`,
+  (t,cat)=>cat==='miner'
+    ? `$${t} tracks Bitcoin with 2–3× leverage due to operating costs. When BTC rallies, miners amplify gains. Play: buy in-the-money calls with 60+ DTE when BTC dominance is rising. Exit before the next halving euphoria peak.`
+    : `$${t} momentum continuation: if price closes above 20-day high on volume >1.5× average, enter a bull put spread 10% below current price for a 30-day credit play. Collect 2–3% premium on a bullish directional bet.`,
+  (t,_)=>`Calendar spread on $${t}: sell a 30-day ATM call, buy a 60-day ATM call. Collect theta decay on the near-term leg. Close when the front-month expires or at +30% gain. Works best in low-trending, higher-IV environments.`,
+];
+
+const STRATEGIES = [
+  "Poor Man's CC", 'Bull Call Spread', 'Momentum Scalp', 'Wheel Strategy',
+  'Debit Spread', 'Iron Condor', 'Risk Reversal', 'ATM Straddle',
+  'Calendar Spread', 'CSP + CC Wheel',
+];
+
+const TT_HOOKS = [
+  (t,s)=>`POV: you found $${t} before it moons 🌙 The AI viral score just hit ${s}/100 💀 #stocks #trading #${t.toLowerCase()} #memestock #wallstreetbets`,
+  (t,s)=>`The algo found something on $${t} 👀 Viral score: ${s}/100. Not financial advice but… 👁️👄👁️ #stocktok #trading #${t.toLowerCase()} #investing`,
+  (t,s)=>`$${t} is giving main character energy rn 🚀 ViralSignal AI says ${s}/100 — do with that what you will 🫡 #fintech #memestock #${t.toLowerCase()}`,
+  (t,s)=>`They don't want you to know $${t} scored ${s}/100 🤫 The algo sees everything #tradingtips #${t.toLowerCase()} #stocks #viral`,
+  (t,s)=>`Ran $${t} through the signal scanner at 2am again 😭 Score came back ${s}/100 I can't sleep #stocktok #${t.toLowerCase()} #yolo #investing`,
+  (t,s)=>`Is $${t} the next big one? AI gave it a ${s}/100 viral score 🔥 I'm not saying… but I'm saying 🤷 #wallstreetbets #${t.toLowerCase()} #memestock`,
+  (t,s)=>`$${t} just showed up on my scanner 📡 ${s}/100 signal strength. Watching this all week. NFA. #fintech #stocks #${t.toLowerCase()} #trading`,
+  (t,s)=>`Real talk: $${t} viral score is ${s}/100 🚨 Reddit is starting to notice. Could be nothing. Could be everything. #wsb #memestock #${t.toLowerCase()}`,
+];
+
+const TW_HOOKS = [
+  (t,s)=>`$${t} just scored ${s}/100 on ViralSignal AI 🚨\n\nSocial sentiment is peaking.\nOptions flow is heating up.\nShort interest is elevated.\n\nNot financial advice — but I'm watching closely. 👀\n\n#memestock #trading #${t}`,
+  (t,s)=>`Running $${t} through the AI signal engine...\n\n📊 Viral Score: ${s}/100\n🚀 Pump Probability: elevated\n🎭 Meme Potential: peaking\n💎 Reddit Mentions: spiking\n\nThis is the way. (Not advice) $${t} ⚡`,
+  (t,s)=>`$${t} viral score: ${s}/100\n\nThe meme signal is clear.\nOptions traders are already positioned.\nWait for the confirmation candle.\n\nDYOR. Not advice. 🤝\n\n#WallStreetBets #memestock $${t}`,
+  (t,s)=>`Thread on $${t} 🧵\n\n1/ Viral score hit ${s}/100 overnight\n2/ Short interest is elevated\n3/ TikTok FinTok mentions 3× avg\n4/ Options flow going green\n5/ I'm not a financial advisor\n\nWatch this ticker. $${t} 👇`,
+  (t,s)=>`Something weird is happening with $${t}.\n\nViralSignal score: ${s}/100.\nThis doesn't happen often.\n\nI'll leave the rest to your imagination.\n\nNot financial advice.\n\n$${t} 🔭`,
+  (t,s)=>`$${t} alert 🚨\n\nScore: ${s}/100\nMeme velocity: rising fast\nSocial volume: accelerating\n\nEither this is the one or it's a beautiful trap.\n\nPosition accordingly. Not advice.\n\n#stocks #options $${t}`,
+  (t,s)=>`Quietly adding $${t} to my watchlist.\n\nAI viral score: ${s}/100.\nSocial chatter is building.\nInstitutions haven't noticed yet.\n\nSometimes the edge is just being early.\n\nNot financial advice. $${t} 🧠`,
+  (t,s)=>`$${t} is the most interesting ticker on my screen right now.\n\nViralSignal AI score: ${s}/100\nThat's all I'll say.\n\nDYOR. Not advice.\n\n$${t} ⚡ #memestock #WSB`,
+];
+
+const LOAD_MSGS = [
+  'Scanning Reddit r/wallstreetbets…',
+  'Cross-referencing r/options flow…',
+  'Analyzing TikTok FinTok momentum…',
+  'Sniffing unusual options activity…',
+  'Calculating meme velocity score…',
+  'Checking Twitter/X sentiment delta…',
+  'Cross-referencing short interest data…',
+  'Consulting the stonk oracle…',
+  'Running viral pattern recognition…',
+  'Scoring meme potential index…',
+  'Calibrating pump probability engine…',
+  'Checking Discord alpha channels…',
+  'Finalizing signal output…',
+  'Packaging results…',
+];
+
+// Realistic volume tiers with trending labels
+const VOL_TIERS = [
+  { min:0,  vol:'< 1K',    trend:'→ Flat — not on radar',        mentions:'< 1K' },
+  { min:15, vol:'~3.4K',   trend:'↑ 18% vs yesterday',          mentions:'~3K' },
+  { min:25, vol:'~11K',    trend:'↑ 34% vs 7-day avg',          mentions:'~11K' },
+  { min:38, vol:'~38K',    trend:'↑ 72% vs last week',          mentions:'~38K' },
+  { min:50, vol:'~120K',   trend:'↑ 2.1× yesterday volume',   mentions:'~120K' },
+  { min:62, vol:'~340K',   trend:'↑ 4.8× weekly average',       mentions:'~340K' },
+  { min:74, vol:'~1.1M',   trend:'🔥 Trending nationwide',       mentions:'~1.1M' },
+  { min:85, vol:'~4.2M',   trend:'🚨 Viral — top trending',      mentions:'~4.2M' },
+];
+
+/* ── SIGNAL ENGINE ────────────────────────────── */
+function parseInput(raw) {
+  const tickers=[], keywords=[];
+  raw.trim().split(/[\s,\n#$@]+/).filter(Boolean).forEach(w=>{
+    // Strip leading $ sign
+    const clean = w.replace(/^\$/, '');
+    const up = clean.toUpperCase().replace(/[^A-Z]/g,'');
+    // Valid ticker: 1-5 uppercase alpha chars
+    if (up.length >= 1 && up.length <= 5 && /^[A-Z]+$/.test(up)) {
+      tickers.push(up);
+    } else {
+      keywords.push(w.toLowerCase());
+    }
+  });
+  return { tickers: tickers.length ? [...new Set(tickers)] : ['MEME'], keywords };
+}
+
+function rnd(lo, hi) { return lo + Math.random() * (hi - lo); }
+function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// Seeded pseudo-random for consistent ticker scores within a session
+function seededRnd(seed, lo, hi) {
+  const x = Math.sin(seed * 9301 + 49297) * 233280;
+  return lo + (x - Math.floor(x)) * (hi - lo);
+}
+function tickerSeed(ticker) {
+  return ticker.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+}
+
+function computeScore(tickers, keywords) {
+  let s = rnd(32, 50);
+
+  tickers.forEach(t => {
+    const tier = KNOWN[t];
+    const seed = tickerSeed(t);
+    if (tier) {
+      const base = [0, 38, 54, 66, 76, 88][tier];
+      // Use seeded noise for ~50% of variance so same ticker feels consistent
+      const noise = seededRnd(seed, -4, 6) + rnd(-4, 6);
+      s = Math.max(s, base + noise);
+    } else {
+      // Unknown ticker: small positive bias (anything could moon)
+      s += rnd(2, 14) + seededRnd(seed, 0, 8);
+    }
+  });
+
+  keywords.forEach(k => {
+    if (BUZZ.some(b => k.includes(b))) s += rnd(5, 11);
+  });
+
+  // Multi-ticker combo bonus (WSB basket plays)
+  if (tickers.length > 1) s += tickers.length * rnd(1.5, 4);
+
+  // Keyword density bonus
+  if (keywords.length > 3) s += rnd(3, 7);
+
+  return clamp(Math.round(s), 8, 99);
+}
+
+/* ── REAL MARKET DATA ────────────────────────────────────────────────────────
+ *
+ *  Uses Yahoo Finance (unofficial) via public CORS proxies.
+ *  No API key required. Falls back to simulated data if all proxies fail.
+ *  Primary proxy: corsproxy.io   Fallback: allorigins.win
+ * ───────────────────────────────────────────────────────────────────────── */
+
+// Crypto tickers Yahoo Finance expects with -USD suffix
+const CRYPTO_SYMBOLS = new Set([
+  'BTC','ETH','DOGE','SOL','XRP','ADA','AVAX','MATIC','SHIB','PEPE',
+  'WIF','BONK','FLOKI','MEME','LTC','BCH','LINK','UNI','DOT','ATOM',
+]);
+
+function yahooSymbol(ticker) {
+  const t = ticker.toUpperCase();
+  return CRYPTO_SYMBOLS.has(t) ? t + '-USD' : t;
+}
+
+function formatVol(n) {
+  if (!n || isNaN(n)) return '--';
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+  return n.toString();
+}
+
+async function tryFetchYahoo(proxyUrl, timeout = 5500) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    const res = await fetch(proxyUrl, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const raw = await res.json();
+    // allorigins.win wraps response: { contents: "{ json string }" }
+    return raw.contents ? JSON.parse(raw.contents) : raw;
+  } catch {
+    clearTimeout(timer);
+    return null;
+  }
+}
+
+function parseYahooChart(json) {
+  const result = json?.chart?.result?.[0];
+  if (!result) return null;
+  const meta  = result.meta || {};
+  const q     = result.indicators?.quote?.[0] || {};
+  const ts    = result.timestamp || [];
+
+  const price    = meta.regularMarketPrice ?? meta.chartPreviousClose;
+  const prev     = meta.regularMarketPreviousClose ?? meta.chartPreviousClose ?? price;
+  if (!price) return null;
+
+  const change    = price - prev;
+  const changePct = prev ? (change / prev) * 100 : 0;
+
+  // Filter out null-padded entries (market closed / gaps)
+  const closes  = q.close  || [];
+  const opens   = q.open   || [];
+  const highs   = q.high   || [];
+  const lows    = q.low    || [];
+  const volumes = q.volume || [];
+
+  const validIdx = closes.map((c, i) => c != null ? i : -1).filter(i => i >= 0);
+
+  return {
+    price, change, changePct,
+    volume:   meta.regularMarketVolume ?? volumes[volumes.length - 1] ?? 0,
+    currency: meta.currency || 'USD',
+    symbol:   meta.symbol || '',
+    history: {
+      timestamps: validIdx.map(i => ts[i]),
+      closes:     validIdx.map(i => closes[i]),
+      opens:      validIdx.map(i => opens[i]  ?? closes[i]),
+      highs:      validIdx.map(i => highs[i]  ?? closes[i]),
+      lows:       validIdx.map(i => lows[i]   ?? closes[i]),
+      volumes:    validIdx.map(i => volumes[i] ?? 0),
+    },
+  };
+}
+
+async function fetchRealQuote(ticker) {
+  const symbol = yahooSymbol(ticker);
+  const yUrl   = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=3mo`;
+
+  const proxies = [
+    `https://corsproxy.io/?url=${encodeURIComponent(yUrl)}`,
+    `https://api.allorigins.win/get?url=${encodeURIComponent(yUrl)}`,
+  ];
+
+  for (const proxyUrl of proxies) {
+    const json = await tryFetchYahoo(proxyUrl);
+    if (!json) continue;
+    const parsed = parseYahooChart(json);
+    if (parsed) return parsed;
+  }
+  return null; // all proxies failed — caller uses simulated data
+}
+
+function buildSignal(raw) {
+  const { tickers, keywords } = parseInput(raw);
+  const primary = tickers[0];
+  const score   = computeScore(tickers, keywords);
+  const cat     = getCategory(primary);
+
+  // Pump probability: score-based with category modifier
+  const pumpBias = { crypto:8, meme:6, levered:5, miner:7, ai:3, generic:0 }[cat] || 0;
+  const pump = clamp(Math.round(score + rnd(-6, 10) + pumpBias), 8, 97);
+
+  const meme   = MEME_RATINGS.find(r => score >= r.min);
+  const risk   = RISKS.find(r => score >= r.min);
+  const volTier = [...VOL_TIERS].reverse().find(v => score >= v.min) || VOL_TIERS[0];
+  const ideaFn  = pick(IDEAS);
+  const stratIdx = Math.floor(Math.random() * STRATEGIES.length);
+
+  return {
+    tickers, primary, score, pump, meme, risk, cat,
+    vol:      volTier.mentions + ' mentions',
+    volTrend: volTier.trend,
+    idea:     ideaFn(primary, cat),
+    strat:    STRATEGIES[stratIdx],
+    ttHook:   pick(TT_HOOKS)(primary, score),
+    twHook:   pick(TW_HOOKS)(primary, score),
+  };
+}
+
+/* ── CHART ────────────────────────────────────── */
+function genPriceSeries(score, days) {
+  // Pick a pattern based on score range for realistic variety
+  const pattern = score >= 85 ? 'moonshot'
+                : score >= 70 ? 'pump_dump'
+                : score >= 55 ? 'breakout'
+                : score >= 40 ? 'consolidation'
+                :               'slow_bleed';
+
+  const prices = [100];
+  const vol = 0.008 + (score / 100) * 0.032;  // base daily volatility
+
+  for (let i = 1; i <= days; i++) {
+    const t    = i / days;                     // 0→1 progress
+    const prev = prices[i - 1];
+    const noise = (Math.random() - 0.5) * vol * prev * 2.4;
+    let drift = 0;
+
+    switch (pattern) {
+      case 'moonshot': {
+        // Slow accumulation then vertical rocket last 25%
+        if (t < 0.60) drift = prev * rnd(0.0005, 0.003);
+        else if (t < 0.85) drift = prev * rnd(0.018, 0.048);
+        else               drift = prev * rnd(0.008, 0.022);
+        break;
+      }
+      case 'pump_dump': {
+        // Classic WSB pump: rip to peak ~65%, then retrace ~50% of gain
+        const peak = 0.62;
+        if (t < peak)      drift = prev * rnd(0.008, 0.028);
+        else if (t < 0.75) drift = prev * rnd(-0.032, -0.008);
+        else               drift = prev * rnd(-0.012, 0.004);
+        break;
+      }
+      case 'breakout': {
+        // Flat base then clean break above resistance
+        if (t < 0.45)      drift = prev * rnd(-0.003, 0.003);
+        else if (t < 0.60) drift = prev * rnd(0.010, 0.025);
+        else               drift = prev * rnd(0.002, 0.010);
+        break;
+      }
+      case 'consolidation': {
+        // Oscillates around a mean, slightly upward bias
+        const mean = 100 * (1 + t * 0.08);
+        drift = (mean - prev) * 0.12 + prev * rnd(-0.002, 0.005);
+        break;
+      }
+      case 'slow_bleed':
+      default: {
+        // Gradual downtrend with dead-cat bounces
+        if (Math.random() < 0.12) drift = prev * rnd(0.008, 0.022);   // bounce
+        else                       drift = prev * rnd(-0.018, -0.002);
+        break;
+      }
+    }
+
+    prices.push(Math.max(8, Math.round((prev + drift + noise) * 100) / 100));
+  }
+  return prices;
+}
+function genLabels(days){
+  const labels=[],now=new Date();
+  for(let i=days;i>=0;i--){
+    const d=new Date(now); d.setDate(d.getDate()-i);
+    const fmt=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    if(days<=9)       labels.push(fmt);
+    else if(days<=31) labels.push(i%5===0?fmt:'');
+    else              labels.push(i%12===0?fmt:'');
+  }
+  return labels;
+}
+/* ── ADVANCED STATS ───────────────────────────── */
+function renderAdvStats(d) {
+  try {
+  const card = document.getElementById('adv-stats-card');
+  if (!card) return;
+  card.style.display = 'block';
+
+  const sc = d.score;
+  // Derived values — deterministic from score so they're stable
+  const seed = sc / 100;
+  const si   = Math.round(8 + seed*42);        // Short Interest 8-50%
+  const iv   = Math.round(20 + seed*65);        // IV Percentile 20-85
+  const bull = Math.round(30 + seed*45);        // Bull sentiment 30-75%
+  const bear = 100 - bull;
+
+  document.getElementById('si-val').textContent = si+'%';
+  document.getElementById('iv-val').textContent = iv+'th';
+  document.getElementById('bull-pct').textContent = bull+'%';
+  document.getElementById('bear-pct').textContent = bear+'%';
+
+  setTimeout(() => {
+    document.getElementById('si-bar').style.width  = si+'%';
+    document.getElementById('iv-bar').style.width  = iv+'%';
+    document.getElementById('bull-bar').style.width = bull+'%';
+  }, 300);
+
+  // Show/hide lock overlay based on Pro status
+  const lock = document.getElementById('adv-stats-lock');
+  if (lock) lock.style.display = isPro ? 'none' : 'flex';
+
+  } catch(err) { console.warn('[renderAdvStats]', err); }
+}
+
+/* Slice real history to match selected range, label by date */
+function sliceHistory(hist, range) {
+  const n = range === '7d' ? 7 : range === '30d' ? 30 : hist.closes.length;
+  const start = Math.max(0, hist.closes.length - n);
+  const tsToLabel = ts => {
+    const d = new Date(ts * 1000);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+  return {
+    labels:  hist.timestamps.slice(start).map(tsToLabel),
+    closes:  hist.closes.slice(start),
+    opens:   hist.opens.slice(start),
+    highs:   hist.highs.slice(start),
+    lows:    hist.lows.slice(start),
+    volumes: hist.volumes.slice(start),
+  };
+}
+
+function renderChart(score,range,ctype){
+  // Chart.js is deferred — silently bail if not yet loaded, retry in 200ms
+  if (typeof Chart === 'undefined') {
+    setTimeout(() => renderChart(score, range, ctype), 200);
+    return;
+  }
+  try {
+  ctype = ctype || curCType || 'line';
+
+  // Use real history if available, fall back to simulated
+  const hist = signal?.liveQuote?.history;
+  const hasReal = hist && hist.closes && hist.closes.length > 2;
+
+  let data, lbls;
+  if (hasReal) {
+    const sliced = sliceHistory(hist, range);
+    data = sliced.closes;
+    lbls = sliced.labels;
+    // Override simulated RSI/candle with real OHLCV data
+    if (ctype === 'candle') {
+      // Build real OHLC from sliced real data
+      const realOHLC = sliced.closes.map((close, i) => ({
+        x: sliced.labels[i],
+        o: sliced.opens[i],
+        h: sliced.highs[i],
+        l: sliced.lows[i],
+        c: close,
+      }));
+      const canvas = document.getElementById('chart-canvas');
+      if (!canvas) return;
+      try { if (chart) { chart.destroy(); chart = null; } } catch(_) {}
+      const upColor   = 'rgba(0,255,136,.75)';
+      const downColor = 'rgba(255,45,120,.75)';
+      const barData   = realOHLC.map(d => ({ x: d.x, y: [d.l, d.h] }));
+      const bodyData  = realOHLC.map(d => ({ x: d.x, y: [Math.min(d.o, d.c), Math.max(d.o, d.c)] }));
+      const barColors  = realOHLC.map(d => d.c >= d.o ? 'rgba(0,255,136,.2)' : 'rgba(255,45,120,.2)');
+      const bodyColors = realOHLC.map(d => d.c >= d.o ? upColor : downColor);
+      chart = new Chart(canvas, {
+        type: 'bar',
+        data: { labels: sliced.labels, datasets: [
+          { data: barData,  backgroundColor: barColors,  borderWidth: 0, barPercentage: .25, categoryPercentage: .8 },
+          { data: bodyData, backgroundColor: bodyColors, borderWidth: 0, barPercentage: .55, categoryPercentage: .8 },
+        ]},
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: {
+            backgroundColor: 'rgba(13,13,26,.95)', borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+            titleColor: 'rgba(255,255,255,.4)', padding: 10,
+            callbacks: {
+              label: c => c.datasetIndex === 1 ? ` $${c.raw.y[0].toFixed(2)} → $${c.raw.y[1].toFixed(2)}` : null,
+              filter: i => i.datasetIndex === 1,
+            }
+          }},
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,.03)' }, ticks: { color: 'rgba(255,255,255,.22)', font: { size: 9, family: 'Space Mono' }, maxRotation: 0 } },
+            y: { position: 'right', grid: { color: 'rgba(255,255,255,.03)' }, ticks: { color: 'rgba(255,255,255,.22)', font: { size: 9, family: 'Space Mono' }, callback: v => '$' + v.toFixed(2) } },
+          },
+          interaction: { mode: 'index', intersect: false },
+          animation: { duration: 600, easing: 'easeInOutQuart' },
+        }
+      });
+      return;
+    }
+  } else {
+    const days = range === '7d' ? 7 : range === '30d' ? 30 : 90;
+    data = genPriceSeries(score, days);
+    lbls = genLabels(days);
+  }
+
+  const days=range==='7d'?7:range==='30d'?30:90;
+  if (!hasReal) { data=genPriceSeries(score,days); lbls=genLabels(days); }
+  const isUp=data[data.length-1]>=data[0];
+  const color=isUp?'#00ff88':'#ff2d78';
+  const canvas=document.getElementById('chart-canvas');
+  if(!canvas) return;
+  try { if(chart){ chart.destroy(); chart=null; } } catch(_){}
+  const ctx=canvas.getContext('2d');
+
+  if(ctype==='rsi'){
+    // Simulated RSI series (0-100)
+    const rsiData = data.map((_,i,a)=>{
+      const base = 30 + (score/100)*40;
+      return Math.max(5,Math.min(95,base + (Math.sin(i*0.4+score)*18) + (Math.random()-0.5)*12));
+    });
+    chart=new Chart(canvas,{
+      type:'line',
+      data:{
+        labels:lbls,
+        datasets:[
+          { data:rsiData, borderColor:'#a78bfa', borderWidth:2, fill:false,
+            tension:.38, pointRadius:0, pointHoverRadius:4,
+            pointHoverBackgroundColor:'#a78bfa' },
+          { data:Array(days).fill(70), borderColor:'rgba(255,45,120,.3)', borderWidth:1,
+            borderDash:[4,3], fill:false, pointRadius:0 },
+          { data:Array(days).fill(30), borderColor:'rgba(0,255,136,.3)', borderWidth:1,
+            borderDash:[4,3], fill:false, pointRadius:0 },
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'rgba(13,13,26,.95)',
+          borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:'rgba(255,255,255,.4)',
+          bodyColor:'#a78bfa',padding:10,
+          callbacks:{label:c=>c.datasetIndex===0?` RSI ${c.parsed.y.toFixed(1)}`:null,filter:i=>i.datasetIndex===0} } },
+        scales:{
+          x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'rgba(255,255,255,.22)',font:{size:9,family:'Space Mono'},maxRotation:0}},
+          y:{position:'right',min:0,max:100,grid:{color:'rgba(255,255,255,.03)'},
+            ticks:{color:'rgba(255,255,255,.22)',font:{size:9,family:'Space Mono'},callback:v=>v}}
+        },
+        interaction:{mode:'index',intersect:false},
+        animation:{duration:750,easing:'easeInOutQuart'},
+      }
+    });
+    return;
+  }
+
+  if(ctype==='candle'){
+    // Simulate OHLC as floating bar chart
+    const ohlcData = data.map((close,i,a)=>{
+      const prev = a[i-1]||close;
+      const open = prev;
+      const hi = Math.max(open,close) * (1+(Math.random()*.018));
+      const lo = Math.min(open,close) * (1-(Math.random()*.018));
+      return { x: lbls[i], o: open, h: hi, l: lo, c: close };
+    });
+    // Render as pairs of bar datasets (hi-lo body)
+    const upColor   = 'rgba(0,255,136,.75)';
+    const downColor = 'rgba(255,45,120,.75)';
+    const barData = ohlcData.map(d=>({ x:d.x, y:[d.l, d.h] }));
+    const bodyData= ohlcData.map(d=>({ x:d.x, y:[Math.min(d.o,d.c), Math.max(d.o,d.c)] }));
+    const barColors  = ohlcData.map(d=>d.c>=d.o?'rgba(0,255,136,.25)':'rgba(255,45,120,.25)');
+    const bodyColors = ohlcData.map(d=>d.c>=d.o?upColor:downColor);
+
+    chart=new Chart(canvas,{
+      type:'bar',
+      data:{
+        labels:lbls,
+        datasets:[
+          { data:barData,  backgroundColor:barColors,  borderWidth:0, barPercentage:.25, categoryPercentage:.8 },
+          { data:bodyData, backgroundColor:bodyColors, borderWidth:0, barPercentage:.55, categoryPercentage:.8 },
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            backgroundColor:'rgba(13,13,26,.95)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,
+            titleColor:'rgba(255,255,255,.4)',padding:10,
+            callbacks:{ label:c=>c.datasetIndex===1?` $${c.raw.y[0].toFixed(2)} → $${c.raw.y[1].toFixed(2)}`:null,
+              filter:i=>i.datasetIndex===1 }
+          }
+        },
+        scales:{
+          x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'rgba(255,255,255,.22)',font:{size:9,family:'Space Mono'},maxRotation:0}},
+          y:{position:'right',grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'rgba(255,255,255,.22)',font:{size:9,family:'Space Mono'},callback:v=>'$'+v.toFixed(0)}}
+        },
+        interaction:{mode:'index',intersect:false},
+        animation:{duration:600,easing:'easeInOutQuart'},
+      }
+    });
+    return;
+  }
+
+  // Default: LINE
+  const grad=ctx.createLinearGradient(0,0,0,210);
+  grad.addColorStop(0,isUp?'rgba(0,255,136,.25)':'rgba(255,45,120,.25)');
+  grad.addColorStop(1,'rgba(0,0,0,0)');
+  chart=new Chart(canvas,{
+    type:'line',
+    data:{
+      labels:lbls,
+      datasets:[{
+        data,borderColor:color,borderWidth:2,fill:true,backgroundColor:grad,
+        tension:.42,pointRadius:0,pointHoverRadius:5,
+        pointHoverBackgroundColor:color,pointHoverBorderColor:'#070710',pointHoverBorderWidth:2,
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(13,13,26,.95)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,
+          titleColor:'rgba(255,255,255,.4)',bodyColor:color,padding:10,
+          callbacks:{label:c=>` $${c.parsed.y.toFixed(2)}`}
+        }
+      },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'rgba(255,255,255,.22)',font:{size:9,family:'Space Mono'},maxRotation:0}},
+        y:{position:'right',grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'rgba(255,255,255,.22)',font:{size:9,family:'Space Mono'},callback:v=>'$'+v.toFixed(0)}}
+      },
+      interaction:{mode:'index',intersect:false},
+      animation:{duration:750,easing:'easeInOutQuart'},
+    }
+  });
+  } catch(err) { console.warn('[renderChart]', err); }
+}
+
+function setRange(r){
+  curRange=r;
+  document.querySelectorAll('.rng-btn').forEach(b=>b.classList.toggle('active',b.dataset.r===r));
+  if(signal) renderChart(signal.score,r,curCType);
+}
+
+function setChartType(t){
+  if((t==='candle'||t==='rsi')&&!isPro){
+    openModal('activate');
+    return;
+  }
+  curCType=t;
+  ['line','candle','rsi'].forEach(x=>{
+    const b=document.getElementById('ctype-'+x);
+    if(b) b.classList.toggle('active',x===t);
+  });
+  if(signal) renderChart(signal.score,curRange,t);
+}
+
+/* ── CONFETTI ─────────────────────────────────── */
+function fireConfetti(score){
+  if(score<68) return;
+  const cols=score>=88
+    ?['#ff2d78','#ff6b35','#ffd700','#00ff88','#00d4ff','#7c3aed']
+    :['#00ff88','#00d4ff','#7c3aed'];
+  confetti({particleCount:score>=88?200:100,spread:74,origin:{y:.6},colors:cols});
+  if(score>=88){
+    setTimeout(()=>confetti({particleCount:60,angle:60,spread:55,origin:{x:0},colors:cols}),280);
+    setTimeout(()=>confetti({particleCount:60,angle:120,spread:55,origin:{x:1},colors:cols}),420);
+  }
+}
+
+/* ── ANIMATED COUNTER ─────────────────────────── */
+function animCount(el,target,suffix,dur){
+  let cur=0;
+  const step=target/(dur/16);
+  const t=setInterval(()=>{
+    cur=Math.min(cur+step,target);
+    el.textContent=Math.round(cur)+suffix;
+    if(cur>=target) clearInterval(t);
+  },16);
+}
+
+/* ── TERMINAL LOADING ─────────────────────────── */
+function startTerminal(){
+  const linesEl=document.getElementById('term-lines');
+  linesEl.innerHTML='';
+  // Reset progress bar by re-cloning
+  const prog=document.getElementById('load-prog');
+  const parent=prog.parentNode;
+  const clone=prog.cloneNode(false);
+  parent.replaceChild(clone,prog);
+
+  let i=0;
+  return setInterval(()=>{
+    if(i>=LOAD_MSGS.length) return;
+    const line=document.createElement('div');
+    line.className='term-line';
+    line.style.animationDelay=(i*50)+'ms';
+    linesEl.scrollTop=linesEl.scrollHeight;
+    i++;
+  },520);
+}
+
+/* ── SCORE COLOR ──────────────────────────────── */
+function scoreColor(s){
+  if(s>=75) return '#00ff88';
+  if(s>=55) return '#ffd700';
+  if(s>=38) return '#ff6b35';
+  return '#ff2d78';
+}
+function scoreGlowClass(s){
+  if(s>=75) return 'glow-score-high';
+  if(s>=55) return 'glow-score-med';
+  if(s>=38) return 'glow-score-warm';
+  return 'glow-score-low';
+}
+
+
+/* ── RENDER RESULTS ───────────────────────────── */
+function renderResults(d){
+  try {
+  const panel=document.getElementById('results');
+  if(!panel) return;
+  panel.style.display='block';
+
+  // Badges
+  const badgesEl=document.getElementById('ticker-badges');
+  if(badgesEl) badgesEl.innerHTML=d.tickers.map(t=>`<span class="ticker-badge">$${t}</span>`).join('');
+  const sigTime=document.getElementById('sig-time');
+  if(sigTime) sigTime.textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+
+  // Score
+  const sc=document.getElementById('score-num-el');
+  if(sc) animCount(sc,d.score,'',1400);
+  const col=scoreColor(d.score);
+  setTimeout(()=>{
+    const perim=2*Math.PI*48;
+    const g=document.getElementById('gauge-fill');
+    if(g){ g.style.strokeDashoffset=perim-(d.score/100)*perim; g.style.stroke=col; }
+    if(sc) sc.style.color=col;
+    const gw=document.getElementById('gauge-wrap');
+    if(gw){ gw.classList.remove('glow-score-high','glow-score-med','glow-score-warm','glow-score-low'); gw.classList.add(scoreGlowClass(d.score)); }
+    // Card progress bar
+    const cpb=document.getElementById('card-prog-bar');
+    if(cpb) cpb.style.width=d.score+'%';
+  },200);
+
+  // Stat cards
+  const setText=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  const setHtml=(id,v)=>{ const el=document.getElementById(id); if(el) el.innerHTML=v; };
+
+  setText('pump-pct',   d.pump+'%');
+  setText('meme-emoji', d.meme.emoji);
+  setText('meme-label', d.meme.label);
+  setText('meme-desc',  d.meme.desc);
+  setText('meme-stars', '★'.repeat(d.meme.stars)+'☆'.repeat(5-d.meme.stars));
+  setText('risk-label', d.risk.label);
+  setText('risk-desc',  d.risk.desc);
+  const riskEl=document.getElementById('risk-label');
+  if(riskEl) riskEl.style.color=d.risk.color;
+  setText('vol-count',  d.vol);
+  setText('vol-trend',  d.volTrend);
+
+  // Pump bar
+  setTimeout(()=>{
+    const pb=document.getElementById('pump-bar');
+    if(pb) pb.style.width=d.pump+'%';
+  },350);
+
+  // Idea
+  setText('trade-idea',    d.idea);
+  setText('strategy-tag',  d.strat);
+  setText('tiktok-hook',   d.ttHook);
+  setText('twitter-hook',  d.twHook);
+
+  // Meme card fields
+  setText('card-ticker',   '$'+d.primary);
+  setText('card-score',    d.score);
+  setText('card-meme-label', d.meme.label);
+  setText('card-pump',     d.pump+'%');
+  setText('card-meme-emoji', d.meme.emoji);
+  setText('card-strat-tag', d.strat);
+  setText('card-idea',     d.idea.slice(0,160)+(d.idea.length>160?'…':''));
+
+  // Card gauge
+  setTimeout(()=>{
+    const perimC=2*Math.PI*42;
+    const cg=document.getElementById('card-gauge-fill');
+    if(cg){ cg.style.strokeDashoffset=perimC-(d.score/100)*perimC; cg.style.stroke=col; }
+    const cs=document.getElementById('card-score');
+    if(cs) cs.style.color=col;
+  },250);
+
+  // Live price card
+  const lpCard = document.getElementById('live-price-card');
+  const lq     = d.liveQuote;
+  if (lq && lpCard) {
+    const up   = lq.change >= 0;
+    const sign = up ? '+' : '';
+    const cls  = up ? 'change-up' : 'change-down';
+    const arrow = up ? '▲' : '▼';
+    const priceStr = lq.currency === 'USD'
+      ? '$' + lq.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: lq.price < 1 ? 6 : 2 })
+      : lq.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) + ' ' + lq.currency;
+
+    const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    const setHTML = (id, v) => { const el = document.getElementById(id); if (el) el.innerHTML = v; };
+    setText('live-price-el',    priceStr);
+    setHTML('live-change-el',   `<span class="${cls}">${arrow} ${sign}${lq.change.toFixed(lq.price < 1 ? 5 : 2)} (${sign}${lq.changePct.toFixed(2)}%)</span>`);
+    setText('live-vol-el',      formatVol(lq.volume));
+    setText('live-currency-el', lq.currency !== 'USD' ? lq.currency : '');
+    lpCard.style.display = 'block';
+
+    // Update chart label
+    const cl = document.getElementById('chart-label');
+    if (cl) cl.textContent = 'PRICE HISTORY (LIVE)';
+  } else {
+    if (lpCard) lpCard.style.display = 'none';
+    const cl = document.getElementById('chart-label');
+    if (cl) cl.textContent = 'SIMULATED PRICE ACTION';
+  }
+
+  // Chart (deferred so DOM paints first)
+  setTimeout(()=>renderChart(d.score,curRange),300);
+
+  // Mobile sticky CTA
+  updateMobileStickyLabel(true);
+  } catch(err){ console.warn('[renderResults]',err); }
+}
+
+/* ── MAIN GENERATE ────────────────────────────── */
+async function runGenerate(){
+  const inp=document.getElementById('ticker-inp');
+  const raw=inp?inp.value.trim():'';
+
+  if(!raw){
+    toast('⚠️','Enter at least one ticker or trend keyword');
+    inp&&inp.focus(); return;
+  }
+  const tokens=raw.split(/[\s,]+/).filter(Boolean);
+  const hasAlpha=tokens.some(t=>/[A-Za-z]/.test(t));
+  if(!hasAlpha){
+    toast('⚠️','Looks like a number — try a ticker like GME or DOGE');
+    inp&&inp.focus(); return;
+  }
+  if(!isPro&&remaining()<=0){ showModal(); return; }
+
+  bumpUsage();
+
+  const resultsEl =document.getElementById('results');
+  const loadingEl =document.getElementById('loading-panel');
+  const btn       =document.getElementById('gen-btn');
+  const btnLabel  =document.getElementById('btn-label');
+  const btnIcon   =document.getElementById('btn-icon');
+
+  if(resultsEl) resultsEl.style.display='none';
+  if(loadingEl) loadingEl.style.display='block';
+  if(btn)       btn.disabled=true;
+  if(btnLabel)  btnLabel.textContent='Analyzing…';
+  if(btnIcon)   btnIcon.textContent='⏳';
+
+  const cycle=startTerminal();
+
+  try {
+    // Fetch real price data in parallel with the analysis delay
+    const primaryTicker = raw.trim().split(/[\s,]+/).find(t => /^[A-Za-z]/.test(t)) || '';
+    const [, liveQuote] = await Promise.all([
+      new Promise(r => setTimeout(r, 1800 + Math.random() * 800)),
+      primaryTicker ? fetchRealQuote(primaryTicker).catch(() => null) : Promise.resolve(null),
+    ]);
+    clearInterval(cycle);
+    if(loadingEl) loadingEl.style.display='none';
+    signal = buildSignal(raw);
+    signal.liveQuote = liveQuote; // attach real data (null = simulated fallback)
+    renderResults(signal);
+    renderAdvStats(signal);
+    saveToHistory(signal);
+    setTimeout(()=>resultsEl&&resultsEl.scrollIntoView({behavior:'smooth',block:'start'}),80);
+    setTimeout(()=>fireConfetti(signal.score),900);
+  } catch(err){
+    clearInterval(cycle);
+    if(loadingEl) loadingEl.style.display='none';
+    toast('❌','Signal engine error — please try again');
+    console.error('[runGenerate]',err);
+  } finally {
+    if(btn)     btn.disabled=false;
+    if(btnLabel) btnLabel.textContent='Generate Signal';
+    if(btnIcon)  btnIcon.textContent='⚡';
+  }
+}
+
+/* ── COPY HOOKS ───────────────────────────────── */
+function copyHook(type){
+  const text=document.getElementById(type==='tiktok'?'tiktok-hook':'twitter-hook').textContent;
+  if(!text) return;
+  navigator.clipboard.writeText(text)
+    .then(()=>toast('✅',type==='tiktok'?'TikTok hook copied!':'X / Twitter hook copied!'))
+    .catch(()=>{
+      try{
+        const ta=document.createElement('textarea');
+        ta.value=text; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+        toast('✅','Copied to clipboard!');
+      } catch(_){ toast('❌','Copy failed — select the text manually'); }
+    });
+}
+
+/* ── LAZY LOAD html2canvas (hertzen CDN, latest) ── */
+let _h2cPromise = null;
+function lazyH2C() {
+  if (typeof html2canvas !== 'undefined') return Promise.resolve();
+  if (_h2cPromise) return _h2cPromise;
+  _h2cPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+    s.onload  = resolve;
+    s.onerror = () => { _h2cPromise = null; reject(new Error('h2c load failed')); };
+    document.head.appendChild(s);
+  });
+  return _h2cPromise;
+}
+
+/* ── BUILD EXPORT SNAPSHOT (RGB-only, no Tailwind/OKLCH) ── */
+function buildExportCard(d) {
+  const snap = document.getElementById('export-snapshot');
+  if (!snap || !d) return;
+  const sc = d.score;
+  const scoreColor = sc >= 75 ? '#00ff88' : sc >= 55 ? '#ffd700' : sc >= 38 ? '#ff6b35' : '#ff2d78';
+  const perim  = +(2 * Math.PI * 54).toFixed(2);
+  const offset = +(perim - (sc / 100) * perim).toFixed(2);
+  const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const stars = '★'.repeat(d.meme.stars) + '☆'.repeat(5 - d.meme.stars);
+  const ideaShort = d.idea.length > 200 ? d.idea.slice(0, 200) + '…' : d.idea;
+  const tStr = d.tickers.map(t => '$' + t).join(' · ');
+  const wm = !isPro
+    ? `<div style="margin-top:10px;text-align:center;font-family:'Space Mono',monospace;font-size:0.5rem;color:rgba(255,255,255,0.2);">FREE · viralsignal.ai · Upgrade to Pro for watermark-free exports</div>`
+    : '';
+
+  snap.innerHTML = `<div id="export-card-inner" style="
+    width:600px;background:linear-gradient(150deg,#07071a 0%,#0f0f2e 40%,#07071a 100%);
+    border:1px solid rgba(0,255,136,0.3);border-radius:18px;overflow:hidden;
+    padding:32px;box-sizing:border-box;
+    font-family:'Space Grotesk',system-ui,sans-serif;color:#ffffff;position:relative;">
+
+    <!-- grid bg -->
+    <div style="position:absolute;inset:0;
+      background-image:linear-gradient(rgba(0,255,136,0.07) 1px,transparent 1px),
+                       linear-gradient(90deg,rgba(0,255,136,0.07) 1px,transparent 1px);
+      background-size:24px 24px;pointer-events:none;z-index:0;"></div>
+
+    <!-- corner brackets -->
+    <div style="position:absolute;top:16px;left:16px;width:22px;height:22px;
+      border-top:2px solid rgba(0,255,136,0.45);border-left:2px solid rgba(0,255,136,0.45);
+      border-radius:2px 0 0 0;z-index:1;"></div>
+    <div style="position:absolute;bottom:16px;right:16px;width:22px;height:22px;
+      border-bottom:2px solid rgba(0,255,136,0.45);border-right:2px solid rgba(0,255,136,0.45);
+      border-radius:0 0 2px 0;z-index:1;"></div>
+
+    <div style="position:relative;z-index:1;">
+
+      <!-- header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:34px;height:34px;border-radius:10px;
+            background:linear-gradient(135deg,#00ff88,#00d4ff);
+            display:flex;align-items:center;justify-content:center;
+            color:#07071a;font-size:1.05rem;font-weight:900;flex-shrink:0;">⚡</div>
+          <div>
+            <div style="font-family:'Space Mono',monospace;font-size:0.88rem;font-weight:700;color:#00ff88;">ViralSignalAI</div>
+            <div style="font-family:'Space Mono',monospace;font-size:0.52rem;color:rgba(255,255,255,0.32);letter-spacing:0.08em;margin-top:2px;">SIGNAL REPORT</div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-family:'Space Mono',monospace;font-size:0.6rem;color:rgba(255,255,255,0.32);">${dateStr}</div>
+          <div style="font-family:'Space Mono',monospace;font-size:0.5rem;color:rgba(0,255,136,0.5);margin-top:3px;">● LIVE SIGNAL</div>
+        </div>
+      </div>
+
+      <!-- gauge + score row -->
+      <div style="display:flex;align-items:center;gap:22px;margin-bottom:22px;">
+        <div style="position:relative;width:120px;height:120px;flex-shrink:0;">
+          <svg viewBox="0 0 120 120" width="120" height="120" style="transform:rotate(-90deg);display:block;">
+            <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="9"/>
+            <circle cx="60" cy="60" r="54" fill="none" stroke="${scoreColor}" stroke-width="9"
+              stroke-linecap="round" stroke-dasharray="${perim}" stroke-dashoffset="${offset}"/>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.9rem;line-height:1;">
+            ${d.meme.emoji}
+          </div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-family:'Space Mono',monospace;font-size:0.72rem;font-weight:700;
+            color:rgba(0,255,136,0.8);letter-spacing:0.06em;margin-bottom:5px;">${tStr}</div>
+          <div style="font-size:4.2rem;font-weight:800;line-height:1;
+            color:${scoreColor};letter-spacing:-0.03em;">${sc}</div>
+          <div style="font-family:'Space Mono',monospace;font-size:0.58rem;
+            color:rgba(255,255,255,0.32);letter-spacing:0.1em;margin-bottom:7px;">VIRAL SCORE / 100</div>
+          <div style="font-family:'Space Mono',monospace;font-size:0.7rem;font-weight:700;color:${scoreColor};">${d.meme.label}</div>
+          <div style="font-size:0.7rem;color:rgba(255,255,255,0.42);margin-top:3px;">${d.meme.desc}</div>
+        </div>
+      </div>
+
+      <!-- stats grid -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:9px;margin-bottom:18px;">
+        <div style="background:rgba(0,255,136,0.07);border:1px solid rgba(0,255,136,0.14);
+          border-radius:11px;padding:11px 8px;text-align:center;">
+          <div style="font-family:'Space Mono',monospace;font-size:0.52rem;color:rgba(255,255,255,0.36);
+            letter-spacing:0.07em;margin-bottom:5px;">PUMP PROB</div>
+          <div style="font-size:1.3rem;font-weight:800;color:#00ff88;">${d.pump}%</div>
+        </div>
+        <div style="background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.14);
+          border-radius:11px;padding:11px 8px;text-align:center;">
+          <div style="font-family:'Space Mono',monospace;font-size:0.52rem;color:rgba(255,255,255,0.36);
+            letter-spacing:0.07em;margin-bottom:5px;">MEME ✨</div>
+          <div style="font-size:0.68rem;font-weight:700;color:#ffd700;">${stars}</div>
+        </div>
+        <div style="background:rgba(255,107,53,0.07);border:1px solid rgba(255,107,53,0.14);
+          border-radius:11px;padding:11px 8px;text-align:center;">
+          <div style="font-family:'Space Mono',monospace;font-size:0.52rem;color:rgba(255,255,255,0.36);
+            letter-spacing:0.07em;margin-bottom:5px;">RISK</div>
+          <div style="font-size:0.66rem;font-weight:700;color:${d.risk.color};">${d.risk.label}</div>
+        </div>
+        <div style="background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.14);
+          border-radius:11px;padding:11px 8px;text-align:center;">
+          <div style="font-family:'Space Mono',monospace;font-size:0.52rem;color:rgba(255,255,255,0.36);
+            letter-spacing:0.07em;margin-bottom:5px;">VOLUME</div>
+          <div style="font-size:0.68rem;font-weight:700;color:#00d4ff;">${d.vol}</div>
+        </div>
+      </div>
+
+      <!-- progress bar -->
+      <div style="margin-bottom:18px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+          <span style="font-family:'Space Mono',monospace;font-size:0.56rem;color:rgba(255,255,255,0.35);letter-spacing:0.07em;">VIRAL SCORE</span>
+          <span style="font-family:'Space Mono',monospace;font-size:0.56rem;color:${scoreColor};font-weight:700;">${sc}/100</span>
+        </div>
+        <div style="height:5px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;">
+          <div style="height:100%;width:${sc}%;background:linear-gradient(90deg,#7c3aed,${scoreColor});border-radius:99px;"></div>
+        </div>
+      </div>
+
+      <!-- trading idea -->
+      <div style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.2);
+        border-radius:11px;padding:13px 15px;margin-bottom:18px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+          <span style="font-size:0.8rem;">💡</span>
+          <span style="font-family:'Space Mono',monospace;font-size:0.55rem;
+            color:rgba(124,58,237,0.85);letter-spacing:0.07em;">QUICK TRADING IDEA</span>
+          <span style="margin-left:auto;font-family:'Space Mono',monospace;font-size:0.55rem;
+            color:#a78bfa;font-weight:700;">${d.strat}</span>
+        </div>
+        <p style="font-size:0.7rem;color:rgba(255,255,255,0.52);line-height:1.55;margin:0;">${ideaShort}</p>
+      </div>
+
+      <!-- footer -->
+      <div style="display:flex;align-items:center;justify-content:space-between;
+        padding-top:11px;border-top:1px solid rgba(255,255,255,0.06);">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="width:18px;height:18px;border-radius:5px;
+            background:linear-gradient(135deg,#00ff88,#00d4ff);
+            display:flex;align-items:center;justify-content:center;
+            color:#07071a;font-size:0.6rem;font-weight:900;">⚡</div>
+          <span style="font-family:'Space Mono',monospace;font-size:0.58rem;color:rgba(255,255,255,0.25);">viralsignal.ai</span>
+        </div>
+        <span style="font-family:'Space Mono',monospace;font-size:0.5rem;color:rgba(255,255,255,0.18);">For entertainment only · Not financial advice</span>
+      </div>
+      ${wm}
+    </div>
+  </div>`;
+}
+
+/* ── TEXT FALLBACK ────────────────────────────── */
+function offerTextFallback() {
+  if (!signal) { toast('❌', 'Export failed — run a signal first'); return; }
+  const text = [
+    `⚡ ViralSignal AI — ${signal.tickers.map(t => '$' + t).join(', ')}`,
+    `Viral Score: ${signal.score}/100`,
+    `Pump Probability: ${signal.pump}%`,
+    `Meme Rating: ${signal.meme.label} ${signal.meme.emoji}`,
+    `Risk Level: ${signal.risk.label}`,
+    `Social Volume: ${signal.vol}`,
+    ``,
+    `Trading Idea (${signal.strat}):`,
+    signal.idea,
+    ``,
+    `Generated by viralsignal.ai · Not financial advice`,
+  ].join('\n');
+  navigator.clipboard.writeText(text)
+    .then(() => toast('📋', 'PNG export failed — copied text results to clipboard instead'))
+    .catch(() => toast('❌', 'Export failed. Try Chrome or Edge for PNG support.'));
+}
+
+/* ── EXPORT CARD ──────────────────────────────── */
+async function exportCard() {
+  if (!signal) { toast('⚠️', 'Run a signal first before exporting'); return; }
+
+  const mainBtn = document.getElementById('export-main-btn');
+  const allBtns = [mainBtn].filter(Boolean);
+  allBtns.forEach(b => { if (b) { b.disabled = true; b.innerHTML = '<span>⏳</span><span>Exporting…</span>'; } });
+  toast('📸', 'Exporting signal card…');
+
+  try {
+    // Load html2canvas from hertzen CDN (latest, no OKLCH issues)
+    await lazyH2C();
+
+    // Build a clean, RGB-only off-screen card — avoids Tailwind OKLCH color bugs
+    buildExportCard(signal);
+
+    const snap   = document.getElementById('export-snapshot');
+    const cardEl = document.getElementById('export-card-inner');
+    if (!cardEl) throw new Error('export-snapshot not found');
+
+    // Let the browser fully paint the injected DOM before capturing
+    await new Promise(r => setTimeout(r, 150));
+
+    const canvas = await html2canvas(cardEl, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#07071a',
+      logging: false,
+      allowTaint: false,
+      imageTimeout: 8000,
+      width: 600,
+      windowWidth: 660,
+    });
+
+    const ticker = signal.primary || 'signal';
+    const ts     = new Date().toISOString().slice(0, 10);
+    const a      = document.createElement('a');
+    a.download   = `viralsignal-${ticker}-${ts}.png`;
+    a.href       = canvas.toDataURL('image/png', 1.0);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    // Flash the live card for visual confirmation
+    const liveCard = document.getElementById('meme-card');
+    if (liveCard) { liveCard.classList.add('export-flash'); setTimeout(() => liveCard.classList.remove('export-flash'), 700); }
+
+    toast('✅', `${ticker} signal card saved! 🎉`);
+
+  } catch (err) {
+    console.error('[exportCard]', err);
+    offerTextFallback();
+  } finally {
+    allBtns.forEach(b => {
+      if (b) {
+        b.disabled = false;
+        if (b.id === 'export-main-btn') b.innerHTML = '<span style="font-size:1.05rem;">📸</span><span>Export PNG</span>';
+      }
+    });
+  }
+}
+
+/* ── SCROLL UTILS ─────────────────────────────── */
+function scrollToInput(){
+  document.getElementById('input-card').scrollIntoView({behavior:'smooth',block:'start'});
+  setTimeout(()=>{ const el=document.getElementById('ticker-inp'); if(el) el.focus(); },420);
+}
+
+/* ── SCROLL REVEAL ────────────────────────────── */
+function initReveal(){
+  if(!('IntersectionObserver' in window)) {
+    document.querySelectorAll('.reveal').forEach(el=>el.classList.add('show'));
+    return;
+  }
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('show'); });
+  },{threshold:.06});
+  document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+}
+
+/* ── KEYBOARD ─────────────────────────────────── */
+function initKeyboard(){
+  const tickerInp=document.getElementById('ticker-inp');
+  if(tickerInp) tickerInp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)) runGenerate();
+  });
+  const modalKeyInp=document.getElementById('modal-key-inp');
+  if(modalKeyInp) modalKeyInp.addEventListener('keydown',e=>{ if(e.key==='Enter') verifyLicense(); });
+  ['key-inp','footer-key-inp'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter') applyKey(id); });
+  });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+}
+
+/* ── INIT ─────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded',()=>{
+  checkStoredKey();
+  checkPaymentSuccess();   // detect ?payment=success return from Stripe
+  refreshUsageUI();
+  // Use requestIdleCallback for non-critical init so first paint isn't blocked
+  const idle = typeof requestIdleCallback === 'function' ? requestIdleCallback : (cb)=>setTimeout(cb,50);
+  idle(()=>{
+    initReveal();
+    initStickyHeader();
+    initMobileSticky();
+  });
+  initKeyboard();
+  document.querySelectorAll('.rng-btn').forEach(b=>b.classList.toggle('active',b.dataset.r===curRange));
+});
+</script>
+  <!-- Off-screen export snapshot: populated by buildExportCard(), captured by html2canvas -->
+  <div id="export-snapshot" style="position:fixed;left:-9999px;top:0;width:600px;pointer-events:none;z-index:-1;overflow:hidden;"></div>
+
+</body>
+</html>
